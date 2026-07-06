@@ -1,0 +1,222 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 60 6% 10%;
+    --foreground: 40 13% 91%;
+    --card: 60 5% 17%;
+    --card-foreground: 40 13% 91%;
+    --popover: 60 5% 17%;
+    --popover-foreground: 40 13% 91%;
+    --primary: 21 48% 56%;
+    --primary-foreground: 60 6% 10%;
+    --secondary: 60 4% 14%;
+    --secondary-foreground: 40 13% 91%;
+    --muted: 60 4% 14%;
+    --muted-foreground: 40 6% 58%;
+    --accent: 21 48% 56%;
+    --accent-foreground: 60 6% 10%;
+    --destructive: 10 55% 50%;
+    --destructive-foreground: 40 13% 91%;
+    --border: 60 4% 22%;
+    --input: 60 4% 20%;
+    --ring: 21 48% 56%;
+    --copper: 21 48% 56%;
+    --copper-foreground: 60 6% 10%;
+    --sage: 143 14% 56%;
+    --sage-foreground: 60 6% 10%;
+    --chart-1: 21 48% 56%;
+    --chart-2: 143 14% 56%;
+    --chart-3: 40 10% 65%;
+    --chart-4: 30 25% 50%;
+    --chart-5: 10 30% 50%;
+    --radius: 0.75rem;
+    --font-heading: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sidebar-background: 60 6% 10%;
+    --sidebar-foreground: 40 13% 91%;
+    --sidebar-primary: 21 48% 56%;
+    --sidebar-primary-foreground: 60 6% 10%;
+    --sidebar-accent: 60 4% 14%;
+    --sidebar-accent-foreground: 40 13% 91%;
+    --sidebar-border: 60 4% 22%;
+    --sidebar-ring: 21 48% 56%;
+  }
+
+  html.light {
+    --background: 40 23% 95%;
+    --foreground: 30 10% 15%;
+    --card: 40 30% 99%;
+    --card-foreground: 30 10% 15%;
+    --popover: 40 30% 99%;
+    --popover-foreground: 30 10% 15%;
+    --primary: 21 48% 56%;
+    --primary-foreground: 40 23% 97%;
+    --secondary: 40 15% 90%;
+    --secondary-foreground: 30 10% 15%;
+    --muted: 40 15% 90%;
+    --muted-foreground: 30 8% 40%;
+    --accent: 21 48% 56%;
+    --accent-foreground: 40 23% 97%;
+    --destructive: 10 55% 50%;
+    --destructive-foreground: 40 23% 97%;
+    --border: 40 10% 85%;
+    --input: 40 10% 85%;
+    --ring: 21 48% 56%;
+    --sidebar-background: 40 23% 95%;
+    --sidebar-foreground: 30 10% 15%;
+    --sidebar-primary: 21 48% 56%;
+    --sidebar-primary-foreground: 40 23% 97%;
+    --sidebar-accent: 40 15% 90%;
+    --sidebar-accent-foreground: 30 10% 15%;
+    --sidebar-border: 40 10% 85%;
+    --sidebar-ring: 21 48% 56%;
+  }
+}
+
+@layer base {
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+      --background: 60 6% 10%;
+      --foreground: 40 13% 91%;
+      --card: 60 5% 17%;
+      --card-foreground: 40 13% 91%;
+      --popover: 60 5% 17%;
+      --popover-foreground: 40 13% 91%;
+      --primary: 21 48% 56%;
+      --primary-foreground: 60 6% 10%;
+      --secondary: 60 4% 14%;
+      --secondary-foreground: 40 13% 91%;
+      --muted: 60 4% 14%;
+      --muted-foreground: 40 6% 58%;
+      --accent: 21 48% 56%;
+      --accent-foreground: 60 6% 10%;
+      --destructive: 10 55% 50%;
+      --destructive-foreground: 40 13% 91%;
+      --border: 60 4% 22%;
+      --input: 60 4% 20%;
+      --ring: 21 48% 56%;
+      --sidebar-background: 60 6% 10%;
+      --sidebar-foreground: 40 13% 91%;
+      --sidebar-primary: 21 48% 56%;
+      --sidebar-primary-foreground: 60 6% 10%;
+      --sidebar-accent: 60 4% 14%;
+      --sidebar-accent-foreground: 40 13% 91%;
+      --sidebar-border: 60 4% 22%;
+      --sidebar-ring: 21 48% 56%;
+    }
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    user-select: none;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  textarea, input, p, article {
+    user-select: text;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(45, 45, 41, 0.5);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(234, 232, 228, 0.06);
+  }
+  .glass-strong {
+    background: rgba(45, 45, 41, 0.75);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(234, 232, 228, 0.08);
+  }
+  html.light .glass {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  html.light .glass-strong {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .glow-copper {
+    box-shadow: 0 0 20px rgba(196, 125, 87, 0.15);
+  }
+  .glow-sage {
+    box-shadow: 0 0 20px rgba(126, 157, 138, 0.15);
+  }
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(126, 157, 138, 0.15);
+  }
+  .glow-amber {
+    box-shadow: 0 0 20px rgba(196, 125, 87, 0.15);
+  }
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(196, 125, 87, 0.15);
+  }
+  .glow-violet {
+    box-shadow: 0 0 20px rgba(126, 157, 138, 0.15);
+  }
+  .glow-rose {
+    box-shadow: 0 0 20px rgba(200, 80, 70, 0.15);
+  }
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* Light mode overrides for white-opacity utilities */
+html.light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04); }
+html.light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06); }
+html.light .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.04); }
+html.light .border-white\/5 { border-color: rgba(0, 0, 0, 0.06); }
+html.light .border-white\/10 { border-color: rgba(0, 0, 0, 0.08); }
+html.light .ring-white\/10 { --tw-ring-color: rgba(0, 0, 0, 0.08); }
+
+/* Glass overrides using CSS custom properties */
+html.light .glass {
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+html.light .glass-strong {
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
