@@ -342,8 +342,10 @@ export default function Learning() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Reading</p>
               )}
               {books.filter(b => b.status === 'reading').map(book => {
-                const pct = book.total_pages > 0 ? (book.pages_read / book.total_pages) * 100 : 0;
-                const remaining = book.total_pages - book.pages_read;
+                const totalPages = Number(book.total_pages) || 0;
+                const pagesRead = Number(book.pages_read) || 0;
+                const pct = totalPages > 0 ? Math.min(100, Math.max(0, (pagesRead / totalPages) * 100)) : 0;
+                const remaining = totalPages - pagesRead;
                 return (
                   <div key={book.id} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
@@ -356,18 +358,21 @@ export default function Learning() {
                       <button onClick={() => deleteBook(book.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground">{book.pages_read}/{book.total_pages} pages</span>
+                      <span className="text-xs text-muted-foreground">{pagesRead}/{totalPages} pages</span>
                       <span className="text-xs font-semibold text-sage">{Math.round(pct)}%</span>
                     </div>
-                    <ProgressBar value={book.pages_read} max={book.total_pages} color="#7E9D8A" height={6} />
-                    {book.total_pages > 0 && remaining > 0 && (
+                    <ProgressBar value={pagesRead} max={totalPages} color="#7E9D8A" height={6} />
+                    {totalPages > 0 && remaining > 0 && (
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5" />
                         Est. {formatReadingTime(remaining * readingSpeed)}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-3">
-                      <Button size="sm" variant="outline" onClick={() => updateBook(book.id, 'pages_read', Math.max(0, book.pages_read - 10))} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        const currentPages = Number(book.pages_read) || 0;
+                        updateBook(book.id, 'pages_read', Math.max(0, currentPages - 10));
+                      }} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
                       <Input
                         type="number"
                         value={book.pages_read}
@@ -375,9 +380,11 @@ export default function Learning() {
                         className="bg-white/5 border-white/10 h-7 text-center text-sm"
                       />
                       <Button size="sm" variant="outline" onClick={() => {
-                        const newVal = book.pages_read + 10;
+                        const currentPages = Number(book.pages_read) || 0;
+                        const totalPages = Number(book.total_pages) || 0;
+                        const newVal = currentPages + 10;
                         updateBook(book.id, 'pages_read', newVal);
-                        if (book.total_pages > 0 && newVal >= book.total_pages) {
+                        if (totalPages > 0 && newVal >= totalPages) {
                           updateBook(book.id, 'status', 'completed');
                         }
                       }} className="glass border-white/10 h-7 w-7 p-0">+10</Button>
