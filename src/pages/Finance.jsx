@@ -246,9 +246,10 @@ export default function Finance() {
     setShowAdd(null);
     try {
       const created = await base44.entities.SavingsGoal.create({
-        ...newSavings,
+        title: newSavings.title,
         target_amount: Number(newSavings.target_amount) || 0,
-        current_amount: Number(newSavings.current_amount) || 0
+        current_amount: Number(newSavings.current_amount) || 0,
+        target_date: newSavings.target_date
       });
       setSavingsGoals(prev => prev.map(s => s.id === tempId ? created : s));
     } catch (err) {

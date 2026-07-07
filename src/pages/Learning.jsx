@@ -92,7 +92,17 @@ export default function Learning() {
     setNewCourse({ title: '', platform: '', total_lessons: 0, target_date: '', notes: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Course.create({ ...newCourse, total_lessons: Number(newCourse.total_lessons) || 0, category: 'personal_development', color: '#7E9D8A', lessons_completed: 0, status: 'active' });
+      const created = await base44.entities.Course.create({
+        title: newCourse.title,
+        platform: newCourse.platform,
+        total_lessons: Number(newCourse.total_lessons) || 0,
+        target_date: newCourse.target_date,
+        notes: newCourse.notes,
+        category: 'personal_development',
+        color: '#7E9D8A',
+        lessons_completed: 0,
+        status: 'active'
+      });
       // Merge created response with temp course to preserve all fields
       setCourses(prevCourses => prevCourses.map(c => c.id === tempId ? { ...tempCourse, ...created } : c));
     } catch (err) {
@@ -118,8 +128,11 @@ export default function Learning() {
     setShowAdd(null);
     try {
       const created = await base44.entities.Book.create({ 
-        ...newBook, 
-        total_pages: Number(newBook.total_pages) || 0, 
+        title: newBook.title,
+        author: newBook.author,
+        total_pages: Number(newBook.total_pages) || 0,
+        target_date: newBook.target_date,
+        takeaways: newBook.takeaways,
         color: '#7E9D8A',
         status: 'reading',
         pages_read: 0
