@@ -63,7 +63,7 @@ export default function Learning() {
     if (!newUnit.title.trim()) return;
     const tempId = 'temp-' + Date.now();
     const tempUnit = { title: newUnit.title, target_date: newUnit.target_date, id: tempId, category: 'academic', color: '#7E9D8A', total_lessons: 0, lessons_completed: 0, status: 'active' };
-    setCourses([tempUnit, ...courses]);
+    setCourses(prevCourses => [tempUnit, ...prevCourses]);
     setNewUnit({ title: '', target_date: '' });
     setShowAdd(null);
     try {
@@ -76,10 +76,10 @@ export default function Learning() {
         lessons_completed: 0,
         status: 'active',
       });
-      setCourses(prev => prev.map(c => c.id === tempId ? created : c));
+      setCourses(prevCourses => prevCourses.map(c => c.id === tempId ? { ...tempUnit, ...created } : c));
     } catch (err) {
       toast.error('Something went wrong, please try again');
-      setCourses(prev => prev.filter(c => c.id !== tempId));
+      setCourses(prevCourses => prevCourses.filter(c => c.id !== tempId));
     }
   };
 
@@ -87,23 +87,33 @@ export default function Learning() {
     if (!newCourse.title.trim()) return;
     const tempId = 'temp-' + Date.now();
     const tempCourse = { ...newCourse, id: tempId, total_lessons: Number(newCourse.total_lessons) || 0, category: 'personal_development', color: '#7E9D8A', lessons_completed: 0, status: 'active' };
-    setCourses([tempCourse, ...courses]);
+    // Optimistic state update using functional form
+    setCourses(prevCourses => [tempCourse, ...prevCourses]);
     setNewCourse({ title: '', platform: '', total_lessons: 0, target_date: '', notes: '' });
     setShowAdd(null);
     try {
       const created = await base44.entities.Course.create({ ...newCourse, total_lessons: Number(newCourse.total_lessons) || 0, category: 'personal_development', color: '#7E9D8A', lessons_completed: 0, status: 'active' });
-      setCourses(prev => prev.map(c => c.id === tempId ? created : c));
+      // Merge created response with temp course to preserve all fields
+      setCourses(prevCourses => prevCourses.map(c => c.id === tempId ? { ...tempCourse, ...created } : c));
     } catch (err) {
       toast.error('Something went wrong, please try again');
-      setCourses(prev => prev.filter(c => c.id !== tempId));
+      setCourses(prevCourses => prevCourses.filter(c => c.id !== tempId));
     }
   };
 
   const addBook = async () => {
     if (!newBook.title.trim()) return;
     const tempId = 'temp-' + Date.now();
-    const tempBook = { ...newBook, id: tempId, total_pages: Number(newBook.total_pages) || 0, color: '#7E9D8A', status: 'reading', pages_read: 0 };
-    setBooks([tempBook, ...books]);
+    const tempBook = { 
+      ...newBook, 
+      id: tempId, 
+      total_pages: Number(newBook.total_pages) || 0, 
+      color: '#7E9D8A', 
+      status: 'reading', 
+      pages_read: 0 
+    };
+    // Optimistic state update using functional form
+    setBooks(prevBooks => [tempBook, ...prevBooks]);
     setNewBook({ title: '', author: '', total_pages: 0, target_date: '', takeaways: '' });
     setShowAdd(null);
     try {
@@ -114,31 +124,35 @@ export default function Learning() {
         status: 'reading',
         pages_read: 0
       });
-      setBooks(prev => prev.map(b => b.id === tempId ? created : b));
+      // Merge created response with temp book to preserve all fields
+      setBooks(prevBooks => prevBooks.map(b => b.id === tempId ? { ...tempBook, ...created } : b));
     } catch (err) {
       toast.error('Something went wrong, please try again');
-      setBooks(prev => prev.filter(b => b.id !== tempId));
+      setBooks(prevBooks => prevBooks.filter(b => b.id !== tempId));
     }
   };
 
   const updateCourse = async (id, field, value) => {
-    const course = courses.find(c => c.id === id);
-    const updated = { ...course, [field]: value };
-    await base44.entities.Course.update(id, { [field]: value });
-    setCourses(courses.map(c => c.id === id ? updated : c));
+    // Optimistic state update using functional form to prevent race conditions
+    setCourses(prevCourses => prevCourses.map(c => c.id === id ? { ...c, [field]: value } : c));
+    try {
+      await base44.entities.Course.update(id, { [field]: value });
+    } catch (err) {
+      // Revert on error - we need to refetch to get the correct state
+      toast.error('Something went wrong, please try again');
+      loadData();
+    }
   };
 
   const updateBook = async (id, field, value) => {
-    const book = books.find(b => b.id === id);
-    const updated = { ...book, [field]: value };
-    // Optimistic state update
-    setBooks(books.map(b => b.id === id ? updated : b));
+    // Optimistic state update using functional form to prevent race conditions
+    setBooks(prevBooks => prevBooks.map(b => b.id === id ? { ...b, [field]: value } : b));
     try {
       await base44.entities.Book.update(id, { [field]: value });
     } catch (err) {
-      // Revert on error
-      setBooks(books.map(b => b.id === id ? book : b));
+      // Revert on error - we need to refetch to get the correct state
       toast.error('Something went wrong, please try again');
+      loadData();
     }
   };
 
