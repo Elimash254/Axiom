@@ -131,13 +131,20 @@ function createEntityApi(tableName) {
         userId,
       });
       
+      console.log(`[Supabase] Creating ${snakeTableName} with data:`, snakeData);
+      
       const { data: result, error } = await supabase
         .from(snakeTableName)
         .insert(snakeData)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error(`[Supabase] Error creating ${snakeTableName}:`, error);
+        throw error;
+      }
+      
+      console.log(`[Supabase] Successfully created ${snakeTableName}:`, result);
       return toCamelCaseObject(result);
     },
 
