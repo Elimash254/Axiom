@@ -35,14 +35,14 @@ export default function TopicList({ courseId, courseTitle }) {
       completed: false,
       order: topics.filter(t => (t.parent_id || null) === parentId).length,
     });
-    setTopics([...topics, created]);
+    setTopics(prev => [...prev, created]);
     setNewTopic('');
     setShowAdd(null);
   };
 
   const toggleTopic = async (topic) => {
     const updated = await base44.entities.Topic.update(topic.id, { completed: !topic.completed });
-    setTopics(topics.map(t => t.id === topic.id ? updated : t));
+    setTopics(prev => prev.map(t => t.id === topic.id ? updated : t));
     if (!topic.completed) {
       setJournalTopic(updated);
     }
@@ -50,7 +50,7 @@ export default function TopicList({ courseId, courseTitle }) {
 
   const deleteTopic = async (id) => {
     await base44.entities.Topic.delete(id);
-    setTopics(topics.filter(t => t.id !== id && t.parent_id !== id));
+    setTopics(prev => prev.filter(t => t.id !== id && t.parent_id !== id));
   };
 
   const mainTopics = topics.filter(t => !t.parent_id).sort((a, b) => (a.order || 0) - (b.order || 0));

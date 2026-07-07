@@ -59,9 +59,19 @@ export default function Finance() {
       );
       setAccounts(a);
       setTransactions(t);
-      setHoldings(h);
+      
+      // Sanitize holdings data to prevent NaN errors
+      const sanitizedHoldings = h.map(holding => ({
+        ...holding,
+        quantity: Number(holding.quantity) || 0,
+        buy_price: Number(holding.buy_price) || 0,
+        current_price: Number(holding.current_price) || Number(holding.buy_price) || 0,
+      }));
+      console.log('[Finance] Loaded and sanitized holdings:', sanitizedHoldings.length);
+      setHoldings(sanitizedHoldings);
+      
       setSavingsGoals(sg);
-      if (h.length > 0) refreshPrices(h);
+      if (sanitizedHoldings.length > 0) refreshPrices(sanitizedHoldings);
     } catch (err) {console.error(err);} finally
     {setLoading(false);}
   };
@@ -89,25 +99,61 @@ export default function Finance() {
 
   const addHolding = async () => {
     if (!selectedAsset || !holdingQty) return;
-    const created = await base44.entities.Holding.create({
-      symbol: selectedAsset.symbol,
-      name: selectedAsset.name,
-      asset_type: selectedAsset.asset_type,
-      currency: selectedAsset.currency,
-      exchange: selectedAsset.exchange,
-      quantity: Number(holdingQty),
-      buy_price: Number(holdingBuyPrice) || livePrice || 0,
-      current_price: livePrice || 0,
-      logo_url: liveLogo || null,
-      last_updated: new Date().toISOString()
-    });
-    setHoldings([...holdings, created]);
-    setSelectedAsset(null);
-    setLivePrice(null);
-    setLiveLogo(null);
-    setHoldingQty('');
-    setHoldingBuyPrice('');
-    setShowAdd(null);
+    try {
+      console.log('[Finance] Adding holding:', selectedAsset.symbol, 'qty:', holdingQty, 'price:', holdingBuyPrice);
+      console.log('[Finance] Selected asset details:', JSON.stringify(selectedAsset, null, 2));
+      console.log('[Finance] Current investSubTab before add:', investSubTab);
+      
+      // Force asset_type to match current investSubTab
+      const assetType = investSubTab;
+      console.log('[Finance] FORCING asset_type to:', assetType);
+      
+      const created = await base44.entities.Holding.create({
+        symbol: selectedAsset.symbol,
+        name: selectedAsset.name,
+        asset_type: assetType,
+        currency: selectedAsset.currency,
+        exchange: selectedAsset.exchange,
+        quantity: Number(holdingQty),
+        buy_price: Number(holdingBuyPrice) || livePrice || 0,
+        current_price: livePrice || 0,
+        logo_url: liveLogo || null,
+        last_updated: new Date().toISOString()
+      });
+      console.log('[Finance] Holding created successfully:', created);
+      console.log('[Finance] Created holding asset_type:', created.asset_type);
+      
+      // Sanitize the created holding to prevent NaN errors
+      const sanitizedHolding = {
+        ...created,
+        quantity: Number(created.quantity) || 0,
+        buy_price: Number(created.buy_price) || 0,
+        current_price: Number(created.current_price) || Number(created.buy_price) || 0,
+        asset_type: assetType, // Force the asset_type to match investSubTab
+      };
+      
+      console.log('[Finance] Sanitized holding asset_type:', sanitizedHolding.asset_type);
+      
+      setHoldings(prev => {
+        console.log('[Finance] Adding to holdings. Current count:', prev.length, 'New holding:', sanitizedHolding);
+        const newHoldings = [...prev, sanitizedHolding];
+        console.log('[Finance] New holdings count:', newHoldings.length);
+        console.log('[Finance] All holdings asset_types:', newHoldings.map(h => ({ id: h.id, symbol: h.symbol, asset_type: h.asset_type })));
+        console.log('[Finance] Holdings filtered by', investSubTab, ':', newHoldings.filter(h => h.asset_type === investSubTab));
+        return newHoldings;
+      });
+      
+      setSelectedAsset(null);
+      setLivePrice(null);
+      setLiveLogo(null);
+      setHoldingQty('');
+      setHoldingBuyPrice('');
+      setShowAdd(null);
+      
+    } catch (err) {
+      console.error('[Finance] Error adding holding:', err);
+      toast.error('Failed to add holding');
+    }
   };
 
   const refreshPrices = async (holdingsParam) => {
@@ -154,7 +200,7 @@ export default function Finance() {
     if (!newAccount.name.trim()) return;
     const tempId = 'temp-' + Date.now();
     const tempAccount = { ...newAccount, id: tempId };
-    setAccounts([...accounts, tempAccount]);
+    setAccounts(prev => [...prev, tempAccount]);
     setNewAccount({ name: '', type: 'bank', balance: 0 });
     setShowAdd(null);
     try {
@@ -170,7 +216,7 @@ export default function Finance() {
     if (!newTxn.description.trim() || !newTxn.amount) return;
     const tempId = 'temp-' + Date.now();
     const tempTxn = { ...newTxn, id: tempId, amount: Number(newTxn.amount) };
-    setTransactions([tempTxn, ...transactions]);
+    setTransactions(prev => [tempTxn, ...prev]);
     setNewTxn({ description: '', amount: 0, type: 'expense', category: 'food', date: todayStr() });
     setShowAdd(null);
     try {
@@ -186,7 +232,7 @@ export default function Finance() {
     if (!newSavings.title.trim() || !newSavings.target_amount) return;
     const tempId = 'temp-' + Date.now();
     const tempSavings = { ...newSavings, id: tempId, target_amount: Number(newSavings.target_amount), current_amount: Number(newSavings.current_amount) };
-    setSavingsGoals([...savingsGoals, tempSavings]);
+    setSavingsGoals(prev => [...prev, tempSavings]);
     setNewSavings({ title: '', target_amount: 0, current_amount: 0, target_date: '' });
     setShowAdd(null);
     try {
@@ -208,20 +254,25 @@ export default function Finance() {
   };
 
   // Currency-aware calculations — cash & savings are always KES, convert if showing USD
-  const cashTotalRaw = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+  const cashTotalRaw = accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
   const cashTotal = convertCurrency(cashTotalRaw, 'KES', displayCurrency, exchangeRate);
   const portfolioValue = holdings.reduce((s, h) => {
     const hc = h.currency || 'USD';
-    const raw = (h.quantity || 0) * (h.current_price || h.buy_price || 0);
+    const quantity = Number(h.quantity) || 0;
+    const currentPrice = Number(h.current_price) || Number(h.buy_price) || 0;
+    const raw = quantity * currentPrice;
     return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
   }, 0);
   const portfolioCost = holdings.reduce((s, h) => {
     const hc = h.currency || 'USD';
-    const raw = (h.quantity || 0) * (h.buy_price || 0);
+    const quantity = Number(h.quantity) || 0;
+    const buyPrice = Number(h.buy_price) || 0;
+    const raw = quantity * buyPrice;
     return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
   }, 0);
+  // Protect against division by zero
   const portfolioChange = portfolioCost > 0 ? (portfolioValue - portfolioCost) / portfolioCost * 100 : 0;
-  const savingsTotalRaw = savingsGoals.reduce((s, g) => s + (g.current_amount || 0), 0);
+  const savingsTotalRaw = savingsGoals.reduce((s, g) => s + (Number(g.current_amount) || 0), 0);
   const savingsTotal = convertCurrency(savingsTotalRaw, 'KES', displayCurrency, exchangeRate);
   const netWorth = cashTotal + portfolioValue + savingsTotal;
 
@@ -230,8 +281,8 @@ export default function Finance() {
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const monthIncome = monthTxns.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const monthExpense = monthTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const monthIncome = monthTxns.filter((t) => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const monthExpense = monthTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
 
   const lastPriceUpdate = holdings.filter((h) => h.last_updated).length > 0 ?
   new Date(Math.max(...holdings.filter((h) => h.last_updated).map((h) => new Date(h.last_updated).getTime()))) :
@@ -344,8 +395,8 @@ export default function Finance() {
             account={acc}
             onDelete={() => deleteItem('Account', acc.id, setAccounts)}
             onTxn={(txn, updatedAccount) => {
-              setTransactions([txn, ...transactions]);
-              setAccounts(accounts.map((a) => a.id === updatedAccount.id ? updatedAccount : a));
+              setTransactions(prev => [txn, ...prev]);
+              setAccounts(prev => prev.map((a) => a.id === updatedAccount.id ? updatedAccount : a));
             }} />
 
           )
@@ -415,7 +466,7 @@ export default function Finance() {
             key={sg.id}
             goal={sg}
             onDelete={() => deleteItem('SavingsGoal', sg.id, setSavingsGoals)}
-            onUpdate={(updated) => setSavingsGoals(savingsGoals.map((s) => s.id === updated.id ? updated : s))} />
+            onUpdate={(updated) => setSavingsGoals(prev => prev.map((s) => s.id === updated.id ? updated : s))} />
 
           )
           }

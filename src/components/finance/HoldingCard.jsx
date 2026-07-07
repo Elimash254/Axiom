@@ -9,8 +9,11 @@ export default function HoldingCard({ holding, onDelete, onUpdate, displayCurren
 
   const h = holding;
   const holdingCurrency = h.currency || 'USD';
-  const rawValue = (h.quantity || 0) * (h.current_price || h.buy_price || 0);
-  const rawCost = (h.quantity || 0) * (h.buy_price || 0);
+  const quantity = Number(h.quantity) || 0;
+  const currentPrice = Number(h.current_price) || Number(h.buy_price) || 0;
+  const buyPrice = Number(h.buy_price) || 0;
+  const rawValue = quantity * currentPrice;
+  const rawCost = quantity * buyPrice;
   const value = convertCurrency(rawValue, holdingCurrency, displayCurrency, exchangeRate);
   const change = rawCost > 0 ? ((rawValue - rawCost) / rawCost) * 100 : 0;
   const icon = h.logo_url || getAssetIcon(h.symbol, h.asset_type);

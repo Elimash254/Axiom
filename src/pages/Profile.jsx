@@ -75,7 +75,7 @@ export default function Profile() {
     }
   };
 
-  const netWorth = stats ? stats.accounts.reduce((s, a) => s + (a.balance || 0), 0) : 0;
+  const netWorth = stats ? stats.accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0) : 0;
   const goalsAchieved = stats ? stats.goals.filter((g) => g.status === 'achieved').length : 0;
   const habitsCompleted = stats ? stats.habitLogs.filter((l) => l.status === 'completed').length : 0;
   const initial = (displayName || user?.full_name || 'U').charAt(0).toUpperCase();

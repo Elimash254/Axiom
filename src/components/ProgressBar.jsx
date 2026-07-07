@@ -1,5 +1,7 @@
 export default function ProgressBar({ value, max, color = '#3b82f6', height = 8 }) {
-    const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+    const numValue = Number(value) || 0;
+    const numMax = Number(max) || 0;
+    const pct = numMax > 0 ? Math.min(100, Math.max(0, (numValue / numMax) * 100)) : 0;
   
     return (
       <div className="w-full rounded-full overflow-hidden" style={{ height, backgroundColor: 'rgba(255,255,255,0.06)' }}>

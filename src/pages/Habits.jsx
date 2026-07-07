@@ -87,16 +87,13 @@ export default function Habits() {
     setNewHabit({ name: '', category: 'discipline', frequency: 'daily', description: '' });
     setShowAdd(false);
     try {
-      console.log('[Habits] Attempting to create habit:', newHabit);
       const created = await base44.entities.Habit.create({
         ...newHabit,
         color: cat.color,
         icon: 'CheckCircle'
       });
-      console.log('[Habits] Successfully created habit:', created);
       setHabits(prev => prev.map(h => h.id === tempId ? created : h));
     } catch (err) {
-      console.error('[Habits] Error creating habit:', err);
       toast.error('Something went wrong, please try again');
       setHabits(prev => prev.filter(h => h.id !== tempId));
     }

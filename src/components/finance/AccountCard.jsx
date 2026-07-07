@@ -21,7 +21,8 @@ export default function AccountCard({ account, onDelete, onTxn }) {
       date: todayStr(),
       account_id: account.id,
     });
-    const newBalance = (account.balance || 0) + (isAdd ? amt : -amt);
+    const currentBalance = Number(account.balance) || 0;
+    const newBalance = currentBalance + (isAdd ? amt : -amt);
     const updated = await base44.entities.Account.update(account.id, { balance: newBalance });
     onTxn(txn, updated);
     setAmount('');

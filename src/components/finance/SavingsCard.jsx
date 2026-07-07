@@ -11,17 +11,27 @@ export default function SavingsCard({ goal, onDelete, onUpdate }) {
   const handleSubmit = async () => {
     const amt = Number(amount);
     if (!amt) return;
-    const isAdd = showForm === 'add';
-    const newAmount = isAdd
-      ? (goal.current_amount || 0) + amt
-      : Math.max(0, (goal.current_amount || 0) - amt);
-    const updated = await base44.entities.SavingsGoal.update(goal.id, { current_amount: newAmount });
-    onUpdate(updated);
-    setAmount('');
-    setShowForm(null);
+    try {
+      const isAdd = showForm === 'add';
+      const currentAmount = Number(goal.current_amount) || 0;
+      const targetAmount = Number(goal.target_amount) || 0;
+      const newAmount = isAdd
+        ? currentAmount + amt
+        : Math.max(0, currentAmount - amt);
+      console.log('[SavingsCard] Updating goal:', goal.id, 'new amount:', newAmount);
+      const updated = await base44.entities.SavingsGoal.update(goal.id, { current_amount: newAmount });
+      console.log('[SavingsCard] Updated successfully:', updated);
+      onUpdate(updated);
+      setAmount('');
+      setShowForm(null);
+    } catch (err) {
+      console.error('[SavingsCard] Error updating goal:', err);
+    }
   };
 
-  const pct = goal.target_amount > 0 ? (goal.current_amount / goal.target_amount) * 100 : 0;
+  const currentAmount = Number(goal.current_amount) || 0;
+  const targetAmount = Number(goal.target_amount) || 0;
+  const pct = targetAmount > 0 ? Math.min(100, Math.max(0, (currentAmount / targetAmount) * 100)) : 0;
 
   return (
     <div className="glass rounded-2xl p-4">
@@ -31,13 +41,13 @@ export default function SavingsCard({ goal, onDelete, onUpdate }) {
         </div>
         <div className="flex-1">
           <p className="font-medium text-sm">{goal.title}</p>
-          <p className="text-xs text-muted-foreground">{formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}</p>
+          <p className="text-xs text-muted-foreground">{formatCurrency(currentAmount)} / {formatCurrency(targetAmount)}</p>
         </div>
         <button onClick={onDelete} className="text-muted-foreground hover:text-rose-400 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-      <ProgressBar value={goal.current_amount} max={goal.target_amount} color="#C47D57" height={8} />
+      <ProgressBar value={currentAmount} max={targetAmount} color="#C47D57" height={8} />
       <p className="text-xs text-muted-foreground mt-1 text-right">{Math.round(pct)}%</p>
       <div className="flex gap-2 mt-3">
         <button

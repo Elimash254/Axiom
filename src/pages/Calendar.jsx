@@ -55,7 +55,7 @@ export default function Calendar() {
     const cat = eventCategories[newEvent.category];
     const tempId = 'temp-' + Date.now();
     const tempEvent = { ...newEvent, id: tempId, color: cat.color };
-    setEvents([tempEvent, ...events]);
+    setEvents(prev => [tempEvent, ...prev]);
     setNewEvent({ title: '', description: '', date: todayStr(), time: '', end_time: '', category: 'personal' });
     setShowAdd(null);
     try {
@@ -71,7 +71,7 @@ export default function Calendar() {
     if (!newAlarm.title.trim()) return;
     const tempId = 'temp-' + Date.now();
     const tempAlarm = { ...newAlarm, id: tempId, color: '#f43f5e', enabled: true };
-    setAlarms([tempAlarm, ...alarms]);
+    setAlarms(prev => [tempAlarm, ...prev]);
     setNewAlarm({ title: '', time: '07:00', days: 'everyday' });
     setShowAdd(null);
     try {
@@ -85,7 +85,7 @@ export default function Calendar() {
 
   const toggleAlarm = async (alarm) => {
     await base44.entities.Alarm.update(alarm.id, { enabled: !alarm.enabled });
-    setAlarms(alarms.map(a => a.id === alarm.id ? { ...a, enabled: !alarm.enabled } : a));
+    setAlarms(prev => prev.map(a => a.id === alarm.id ? { ...a, enabled: !alarm.enabled } : a));
   };
 
   const addReview = async () => {
@@ -95,13 +95,13 @@ export default function Calendar() {
       milestones_completed: Number(newReview.milestones_completed),
       finance_delta: Number(newReview.finance_delta),
     });
-    setReviews([created, ...reviews]);
+    setReviews(prev => [created, ...prev]);
     setNewReview({ week_starting: todayStr(), habit_hit_rate: 0, milestones_completed: 0, finance_delta: 0, biggest_win: '', improve_next: '', reflection: '' });
     setShowAdd(null);
   };
 
-  const deleteEvent = async (id) => { await base44.entities.CalendarEvent.delete(id); setEvents(events.filter(e => e.id !== id)); };
-  const deleteAlarm = async (id) => { await base44.entities.Alarm.delete(id); setAlarms(alarms.filter(a => a.id !== id)); };
+  const deleteEvent = async (id) => { await base44.entities.CalendarEvent.delete(id); setEvents(prev => prev.filter(e => e.id !== id)); };
+  const deleteAlarm = async (id) => { await base44.entities.Alarm.delete(id); setAlarms(prev => prev.filter(a => a.id !== id)); };
 
   // Calendar grid
   const year = currentMonth.getFullYear();

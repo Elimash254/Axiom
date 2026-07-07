@@ -49,7 +49,7 @@ export default function Goals() {
     const area = lifeAreas[newGoal.life_area];
     const tempId = 'temp-' + Date.now();
     const tempGoal = { ...newGoal, id: tempId, color: area.color, status: 'not_started', milestones_total: 0 };
-    setGoals([tempGoal, ...goals]);
+    setGoals(prev => [tempGoal, ...prev]);
     setNewGoal({ title: '', why: '', life_area: 'personal_growth', target_date: '' });
     setNewMilestones('');
     setShowAdd(false);
@@ -89,19 +89,19 @@ export default function Goals() {
     const total = goalMilestones.length;
     const newStatus = completed === total ? 'achieved' : completed > 0 ? 'in_progress' : 'not_started';
     await base44.entities.Goal.update(goalId, { milestones_completed: completed, milestones_total: total, status: newStatus });
-    setGoals(goals.map(g => g.id === goalId ? { ...g, milestones_completed: completed, milestones_total: total, status: newStatus } : g));
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones_completed: completed, milestones_total: total, status: newStatus } : g));
   };
 
   const addMilestone = async (goalId) => {
     const title = milestoneInputs[goalId]?.trim();
     if (!title) return;
     const created = await base44.entities.Milestone.create({ goal_id: goalId, title, completed: false, order: milestones.filter(m => m.goal_id === goalId).length });
-    setMilestones([...milestones, created]);
+    setMilestones(prev => [...prev, created]);
 
     const goalMilestones = milestones.filter(m => m.goal_id === goalId);
     const newTotal = goalMilestones.length + 1;
     await base44.entities.Goal.update(goalId, { milestones_total: newTotal, status: 'in_progress' });
-    setGoals(goals.map(g => g.id === goalId ? { ...g, milestones_total: newTotal, status: 'in_progress' } : g));
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones_total: newTotal, status: 'in_progress' } : g));
     setMilestoneInputs({ ...milestoneInputs, [goalId]: '' });
   };
 
@@ -109,8 +109,8 @@ export default function Goals() {
     const goalMs = milestones.filter(m => m.goal_id === id);
     await Promise.all(goalMs.map(m => base44.entities.Milestone.delete(m.id)));
     await base44.entities.Goal.delete(id);
-    setGoals(goals.filter(g => g.id !== id));
-    setMilestones(milestones.filter(m => m.goal_id !== id));
+    setGoals(prev => prev.filter(g => g.id !== id));
+    setMilestones(prev => prev.filter(m => m.goal_id !== id));
   };
 
   const deleteMilestone = async (id, goalId) => {
@@ -120,7 +120,7 @@ export default function Goals() {
     const goalMs = newMilestones.filter(m => m.goal_id === goalId);
     const completed = goalMs.filter(m => m.completed).length;
     await base44.entities.Goal.update(goalId, { milestones_completed: completed, milestones_total: goalMs.length });
-    setGoals(goals.map(g => g.id === goalId ? { ...g, milestones_completed: completed, milestones_total: goalMs.length } : g));
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones_completed: completed, milestones_total: goalMs.length } : g));
   };
 
   if (loading) {
@@ -168,9 +168,9 @@ export default function Goals() {
           {goals.map(goal => {
             const area = lifeAreas[goal.life_area] || lifeAreas.personal_growth;
             const goalMs = milestones.filter(m => m.goal_id === goal.id).sort((a, b) => (a.order || 0) - (b.order || 0));
-            const completed = goalMs.filter(m => m.completed).length;
-            const total = goalMs.length || goal.milestones_total || 1;
-            const pct = (completed / total) * 100;
+            const completed = Number(goalMs.filter(m => m.completed).length) || 0;
+            const total = Number(goalMs.length) || Number(goal.milestones_total) || 1;
+            const pct = total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0;
             const isExpanded = expandedGoal === goal.id;
             const isAchieved = goal.status === 'achieved';
 

@@ -195,30 +195,34 @@ export default function Dashboard() {
   }, [holdings.length]);
 
   // Calculate values
-  const completedToday = habitLogs.filter((l) => l.status === 'completed').length;
+  const today = new Date().toISOString().split('T')[0];
+  const completedToday = habitLogs.filter((l) => l.date === today && l.status === 'completed').length;
   const habitPct = habits.length > 0 ? completedToday / habits.length * 100 : 0;
 
-  const cashTotalRaw = accounts.reduce((sum, a) => sum + (a.balance || 0), 0);
+  const cashTotalRaw = accounts.reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
   const cashTotal = convertCurrency(cashTotalRaw, 'KES', displayCurrency, exchangeRate);
-  const savingsTotalRaw = savingsGoals.reduce((sum, s) => sum + (s.current_amount || 0), 0);
+  const savingsTotalRaw = savingsGoals.reduce((sum, s) => sum + (Number(s.current_amount) || 0), 0);
   const savingsTotal = convertCurrency(savingsTotalRaw, 'KES', displayCurrency, exchangeRate);
   const portfolioValue = holdings.reduce((sum, h) => {
     const hc = h.currency || 'USD';
-    const raw = (h.quantity || 0) * (h.current_price || h.buy_price || 0);
+    const quantity = Number(h.quantity) || 0;
+    const currentPrice = Number(h.current_price) || Number(h.buy_price) || 0;
+    const raw = quantity * currentPrice;
     return sum + convertCurrency(raw, hc, displayCurrency, exchangeRate);
   }, 0);
   const portfolioCost = holdings.reduce((sum, h) => {
     const hc = h.currency || 'USD';
-    const raw = (h.quantity || 0) * (h.buy_price || 0);
+    const quantity = Number(h.quantity) || 0;
+    const buyPrice = Number(h.buy_price) || 0;
+    const raw = quantity * buyPrice;
     return sum + convertCurrency(raw, hc, displayCurrency, exchangeRate);
   }, 0);
   const portfolioChange = portfolioCost > 0 ? (portfolioValue - portfolioCost) / portfolioCost * 100 : 0;
   const netWorth = cashTotal + savingsTotal + portfolioValue;
 
-  const today = new Date().toISOString().split('T')[0];
   const todayTxns = transactions.filter((t) => t.date === today);
-  const todayIncome = todayTxns.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const todayExpense = todayTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const todayIncome = todayTxns.filter((t) => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const todayExpense = todayTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
   const todayCashFlow = convertCurrency(todayIncome - todayExpense, 'KES', displayCurrency, exchangeRate);
 
   if (loading) {
@@ -317,7 +321,7 @@ export default function Dashboard() {
 
       {/* Habits Ring */}
       <Link to="/habits" className="block mb-6">
-        <div className="glass rounded-2xl p-5 flex items-center gap-4">
+        <div className={`glass rounded-2xl p-5 flex items-center gap-4 transition-all ${habitPct === 100 ? 'ring-2 ring-copper/50 bg-copper/5' : ''}`}>
           <ProgressRing progress={habitPct} color={habitPct === 100 ? '#C47D57' : '#7E9D8A'} size={72}>
             <div className="text-center">
               <span className="text-lg font-bold">{completedToday}</span>
@@ -326,7 +330,7 @@ export default function Dashboard() {
           </ProgressRing>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <Flame className="w-4 h-4 text-copper" />
+              <Flame className={`w-4 h-4 ${habitPct === 100 ? 'text-copper' : 'text-copper'}`} />
               <h3 className="font-semibold">Today's Habits</h3>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -336,7 +340,7 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl">🔥</p>
+            <p className="text-2xl">{habitPct === 100 ? '🏆' : '🔥'}</p>
           </div>
         </div>
       </Link>
