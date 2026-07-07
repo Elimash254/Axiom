@@ -220,7 +220,8 @@ export default function Finance() {
     setNewTxn({ description: '', amount: 0, type: 'expense', category: 'food', date: todayStr() });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Transaction.create({ ...newTxn, amount: Number(newTxn.amount) || 0 });
+      const { id, ...txnData } = newTxn;
+      const created = await base44.entities.Transaction.create({ ...txnData, amount: Number(newTxn.amount) || 0 });
       setTransactions(prev => prev.map(t => t.id === tempId ? created : t));
     } catch (err) {
       toast.error('Something went wrong, please try again');
