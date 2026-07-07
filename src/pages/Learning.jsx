@@ -179,7 +179,7 @@ export default function Learning() {
                 <div className="glass-strong rounded-2xl p-4 space-y-2">
                   <Input placeholder="Unit name (e.g. Pharmacology I)" value={newUnit.title} onChange={e => setNewUnit({ ...newUnit, title: e.target.value })} className="bg-white/5 border-white/10" />
                   <Input type="date" value={newUnit.target_date} onChange={e => setNewUnit({ ...newUnit, target_date: e.target.value })} className="bg-white/5 border-white/10" />
-                  <Button onClick={addUnit} className="w-full bg-sage hover:bg-sage/90 text-background">Add Unit</Button>
+                  <Button onClick={addUnit} className="w-full bg-sage hover:bg-sage/90 text-white">Add Unit</Button>
                 </div>
               )}
 
@@ -244,7 +244,7 @@ export default function Learning() {
               <Input placeholder="Platform (e.g. Coursera, Udemy)" value={newCourse.platform} onChange={e => setNewCourse({ ...newCourse, platform: e.target.value })} className="bg-white/5 border-white/10" />
               <Input type="number" placeholder="Total lessons" value={newCourse.total_lessons} onChange={e => setNewCourse({ ...newCourse, total_lessons: e.target.value })} className="bg-white/5 border-white/10" />
               <Input type="date" value={newCourse.target_date} onChange={e => setNewCourse({ ...newCourse, target_date: e.target.value })} className="bg-white/5 border-white/10" />
-              <Button onClick={addCourse} className="w-full bg-sage hover:bg-sage/90 text-background">Add Course</Button>
+              <Button onClick={addCourse} className="w-full bg-sage hover:bg-sage/90 text-white">Add Course</Button>
             </div>
           )}
 
@@ -256,9 +256,7 @@ export default function Learning() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Active</p>
               )}
               {personalCourses.filter(c => c.status === 'active').map(course => {
-                const totalLessons = Number(course.total_lessons) || 0;
-                const lessonsCompleted = Number(course.lessons_completed) || 0;
-                const pct = totalLessons > 0 ? Math.min(100, Math.max(0, (lessonsCompleted / totalLessons) * 100)) : 0;
+                const pct = course.total_lessons > 0 ? (course.lessons_completed / course.total_lessons) * 100 : 0;
                 return (
                   <div key={course.id} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
@@ -278,10 +276,7 @@ export default function Learning() {
                     </div>
                     <ProgressBar value={course.lessons_completed} max={course.total_lessons} color="#7E9D8A" height={6} />
                     <div className="flex items-center gap-2 mt-3">
-                      <Button size="sm" variant="outline" onClick={() => {
-                        const currentLessons = Number(course.lessons_completed) || 0;
-                        updateCourse(course.id, 'lessons_completed', Math.max(0, currentLessons - 1));
-                      }} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" onClick={() => updateCourse(course.id, 'lessons_completed', Math.max(0, course.lessons_completed - 1))} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
                       <Input
                         type="number"
                         value={course.lessons_completed}
@@ -289,15 +284,13 @@ export default function Learning() {
                         className="bg-white/5 border-white/10 h-7 text-center text-sm"
                       />
                       <Button size="sm" variant="outline" onClick={() => {
-                        const currentLessons = Number(course.lessons_completed) || 0;
-                        const totalLessons = Number(course.total_lessons) || 0;
-                        const newVal = currentLessons + 1;
+                        const newVal = course.lessons_completed + 1;
                         updateCourse(course.id, 'lessons_completed', newVal);
-                        if (totalLessons > 0 && newVal >= totalLessons) {
+                        if (course.total_lessons > 0 && newVal >= course.total_lessons) {
                           updateCourse(course.id, 'status', 'completed');
                         }
                       }} className="glass border-white/10 h-7 w-7 p-0"><Plus className="w-3 h-3" /></Button>
-                      {Number(course.total_lessons) > 0 && Number(course.lessons_completed) >= Number(course.total_lessons) && (
+                      {course.total_lessons > 0 && course.lessons_completed >= course.total_lessons && (
                         <Button size="sm" onClick={() => updateCourse(course.id, 'status', 'completed')} className="bg-sage hover:bg-sage/90 text-background h-7 ml-auto">Complete</Button>
                       )}
                     </div>
@@ -337,7 +330,7 @@ export default function Learning() {
               <Input placeholder="Author" value={newBook.author} onChange={e => setNewBook({ ...newBook, author: e.target.value })} className="bg-white/5 border-white/10" />
               <Input type="number" placeholder="Total pages" value={newBook.total_pages} onChange={e => setNewBook({ ...newBook, total_pages: e.target.value })} className="bg-white/5 border-white/10" />
               <Input type="date" value={newBook.target_date} onChange={e => setNewBook({ ...newBook, target_date: e.target.value })} className="bg-white/5 border-white/10" />
-              <Button onClick={addBook} className="w-full bg-sage hover:bg-sage/90 text-background">Add Book</Button>
+              <Button onClick={addBook} className="w-full bg-sage hover:bg-sage/90 text-white">Add Book</Button>
             </div>
           )}
 
@@ -349,10 +342,8 @@ export default function Learning() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Reading</p>
               )}
               {books.filter(b => b.status === 'reading').map(book => {
-                const totalPages = Number(book.total_pages) || 0;
-                const pagesRead = Number(book.pages_read) || 0;
-                const pct = totalPages > 0 ? Math.min(100, Math.max(0, (pagesRead / totalPages) * 100)) : 0;
-                const remaining = totalPages - pagesRead;
+                const pct = book.total_pages > 0 ? (book.pages_read / book.total_pages) * 100 : 0;
+                const remaining = book.total_pages - book.pages_read;
                 return (
                   <div key={book.id} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
@@ -376,10 +367,7 @@ export default function Learning() {
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-3">
-                      <Button size="sm" variant="outline" onClick={() => {
-                        const currentPages = Number(book.pages_read) || 0;
-                        updateBook(book.id, 'pages_read', Math.max(0, currentPages - 10));
-                      }} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" onClick={() => updateBook(book.id, 'pages_read', Math.max(0, book.pages_read - 10))} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
                       <Input
                         type="number"
                         value={book.pages_read}
@@ -387,11 +375,9 @@ export default function Learning() {
                         className="bg-white/5 border-white/10 h-7 text-center text-sm"
                       />
                       <Button size="sm" variant="outline" onClick={() => {
-                        const currentPages = Number(book.pages_read) || 0;
-                        const totalPages = Number(book.total_pages) || 0;
-                        const newVal = currentPages + 10;
+                        const newVal = book.pages_read + 10;
                         updateBook(book.id, 'pages_read', newVal);
-                        if (totalPages > 0 && newVal >= totalPages) {
+                        if (book.total_pages > 0 && newVal >= book.total_pages) {
                           updateBook(book.id, 'status', 'completed');
                         }
                       }} className="glass border-white/10 h-7 w-7 p-0">+10</Button>

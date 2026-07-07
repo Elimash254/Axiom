@@ -27,16 +27,15 @@ export default function FlashcardDeck({ courses }) {
     finally { setLoading(false); }
   };
 
-  const dueCards = cards.filter(c => !c.next_review || c.next_review <= todayStr());
+  const dueCards = cards;
 
   const addCard = async () => {
     if (!newCard.front.trim() || !newCard.back.trim()) return;
     const created = await base44.entities.Flashcard.create({
-      ...newCard,
-      ease_factor: 2.5,
-      interval: 1,
-      next_review: todayStr(),
-      review_count: 0,
+      front: newCard.front,
+      back: newCard.back,
+      course_id: newCard.course_id || null,
+      category: 'general',
     });
     setCards([created, ...cards]);
     setNewCard({ front: '', back: '', course_id: '' });
@@ -52,33 +51,9 @@ export default function FlashcardDeck({ courses }) {
     const card = dueCards[currentIdx];
     if (!card) return;
 
-    let ease = card.ease_factor || 2.5;
-    let interval = card.interval || 1;
-    const count = (card.review_count || 0) + 1;
-
-    if (quality === 0) {
-      interval = 1;
-      ease = Math.max(1.3, ease - 0.2);
-    } else if (quality === 1) {
-      interval = Math.max(1, Math.round(interval * 1.2));
-      ease = Math.max(1.3, ease - 0.15);
-    } else if (quality === 2) {
-      interval = Math.round(interval * ease);
-    } else {
-      interval = Math.round(interval * ease * 1.3);
-      ease = ease + 0.15;
-    }
-
-    const next = new Date();
-    next.setDate(next.getDate() + Math.max(1, interval));
-    const nextReview = next.toISOString().split('T')[0];
-
-    const updated = await base44.entities.Flashcard.update(card.id, {
-      ease_factor: ease,
-      interval,
-      next_review: nextReview,
-      review_count: count,
-    });
+    // Simple review - just mark as mastered if rated good or easy
+    const mastered = quality >= 2;
+    const updated = await base44.entities.Flashcard.update(card.id, { mastered });
 
     setCards(cards.map(c => c.id === card.id ? updated : c));
     setFlipped(false);
@@ -184,8 +159,8 @@ export default function FlashcardDeck({ courses }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{card.front}</p>
                 <p className="text-xs text-muted-foreground truncate mt-1">{card.back}</p>
-                {card.next_review && (
-                  <p className="text-xs text-muted-foreground mt-1">Next review: {card.next_review}</p>
+                {card.mastered && (
+                  <p className="text-xs text-muted-foreground mt-1">✓ Mastered</p>
                 )}
               </div>
               <button onClick={() => deleteCard(card.id)} className="text-muted-foreground hover:text-rose-400 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete">
