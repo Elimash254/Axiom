@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,10 +18,12 @@ import { fetchCryptoPrices, fetchAssetPrice, fetchUsdKesRate } from '@/lib/price
 import LastSynced from '@/components/finance/LastSynced';
 import PullToRefresh from '@/components/PullToRefresh';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/lib/AuthContext';
 
 const txnCategories = ['income', 'rent', 'food', 'transport', 'investment', 'entertainment', 'health', 'education', 'shopping', 'other'];
 
 export default function Finance() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -52,18 +54,18 @@ export default function Finance() {
   const loadData = async () => {
     try {
       const [a, t, h, sg] = await Promise.all([
-      base44.entities.Account.list(),
-      base44.entities.Transaction.list('-date', 100),
-      base44.entities.Holding.list(),
-      base44.entities.SavingsGoal.list()]
-      );
-      setAccounts(a);
-      setTransactions(t);
+        supabase.from('accounts').select('*').eq('user_id', user.id),
+        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(100),
+        supabase.from('holdings').select('*').eq('user_id', user.id),
+        supabase.from('savings_goals').select('*').eq('user_id', user.id)
+      ]);
+      setAccounts(a.data || []);
+      setTransactions(t.data || []);
       
-      console.log('[Finance] Raw savings goals data:', sg);
+      console.log('[Finance] Raw savings goals data:', sg.data);
       
       // Sanitize holdings data to prevent NaN errors
-      const sanitizedHoldings = h.map(holding => ({
+      const sanitizedHoldings = (h.data || []).map(holding => ({
         ...holding,
         quantity: Number(holding.quantity) || 0,
         buy_price: Number(holding.buy_price) || 0,
@@ -73,7 +75,7 @@ export default function Finance() {
       setHoldings(sanitizedHoldings);
       
       // Sanitize savings goals data to prevent NaN errors
-      const sanitizedSavings = sg.map(goal => ({
+      const sanitizedSavings = (sg.data || []).map(goal => ({
         ...goal,
         target_amount: Number(goal.target_amount) || 0,
         current_amount: Number(goal.current_amount) || 0,
@@ -116,7 +118,7 @@ export default function Finance() {
       const assetType = investSubTab;
       console.log('[Finance] FORCING asset_type to:', assetType);
       
-      const created = await base44.entities.Holding.create({
+      const { data: created, error } = await supabase.from('holdings').insert([{
         symbol: selectedAsset.symbol,
         name: selectedAsset.name,
         asset_type: assetType,
@@ -126,8 +128,10 @@ export default function Finance() {
         buy_price: Number(holdingBuyPrice) || livePrice || 0,
         current_price: livePrice || 0,
         logo_url: liveLogo || null,
-        last_updated: new Date().toISOString()
-      });
+        last_updated: new Date().toISOString(),
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       console.log('[Finance] Holding created successfully:', created);
       console.log('[Finance] Created holding asset_type:', created.asset_type);
       
@@ -212,7 +216,12 @@ export default function Finance() {
     setNewAccount({ name: '', type: 'bank', balance: 0 });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Account.create({ ...newAccount, balance: Number(newAccount.balance) || 0 });
+      const { data: created, error } = await supabase.from('accounts').insert([{
+        ...newAccount,
+        balance: Number(newAccount.balance) || 0,
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       setAccounts(prev => prev.map(a => a.id === tempId ? created : a));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -228,8 +237,12 @@ export default function Finance() {
     setNewTxn({ description: '', amount: 0, type: 'expense', category: 'food', date: todayStr() });
     setShowAdd(null);
     try {
-      const { id, ...txnData } = newTxn;
-      const created = await base44.entities.Transaction.create({ ...txnData, amount: Number(newTxn.amount) || 0 });
+      const { data: created, error } = await supabase.from('transactions').insert([{
+        ...newTxn,
+        amount: Number(newTxn.amount) || 0,
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       setTransactions(prev => prev.map(t => t.id === tempId ? created : t));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -245,12 +258,14 @@ export default function Finance() {
     setNewSavings({ title: '', target_amount: 0, current_amount: 0, target_date: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.SavingsGoal.create({
+      const { data: created, error } = await supabase.from('savings_goals').insert([{
         title: newSavings.title,
         target_amount: Number(newSavings.target_amount) || 0,
         current_amount: Number(newSavings.current_amount) || 0,
-        target_date: newSavings.target_date
-      });
+        target_date: newSavings.target_date,
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       setSavingsGoals(prev => prev.map(s => s.id === tempId ? created : s));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -259,7 +274,15 @@ export default function Finance() {
   };
 
   const deleteItem = async (type, id, setter) => {
-    await base44.entities[type].delete(id);
+    const tableMap = {
+      'Account': 'accounts',
+      'Transaction': 'transactions',
+      'Holding': 'holdings',
+      'SavingsGoal': 'savings_goals',
+    };
+    const tableName = tableMap[type] || type.toLowerCase() + 's';
+    const { error } = await supabase.from(tableName).delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
     setter((prev) => prev.filter((item) => item.id !== id));
   };
 

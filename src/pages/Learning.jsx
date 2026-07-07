@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Plus, Trash2, BookOpen, GraduationCap, Check, Minus, ChevronDown, ChevronRight, Brain, FlaskConical, Lightbulb, Timer, Shuffle, Clock } from 'lucide-react';
 import PullToRefresh from '@/components/PullToRefresh';
 import toast from 'react-hot-toast';
@@ -36,20 +36,20 @@ export default function Learning() {
   const loadData = async () => {
     try {
       const [c, b] = await Promise.all([
-        base44.entities.Course.list(),
-        base44.entities.Book.list(),
+        supabase.from('courses').select('*').eq('user_id', user.id),
+        supabase.from('books').select('*').eq('user_id', user.id),
       ]);
-      console.log('[Learning] Raw courses data:', c);
-      console.log('[Learning] Raw books data:', b);
+      console.log('[Learning] Raw courses data:', c.data);
+      console.log('[Learning] Raw books data:', b.data);
       // Sanitize courses data to prevent NaN errors
-      const sanitizedCourses = c.map(course => ({
+      const sanitizedCourses = (c.data || []).map(course => ({
         ...course,
         total_lessons: Number(course.total_lessons) || 0,
         lessons_completed: Number(course.lessons_completed) || 0,
       }));
       setCourses(sanitizedCourses);
       // Sanitize books data to prevent NaN errors
-      const sanitizedBooks = b.map(book => ({
+      const sanitizedBooks = (b.data || []).map(book => ({
         ...book,
         total_pages: Number(book.total_pages) || 0,
         pages_read: Number(book.pages_read) || 0,
@@ -67,7 +67,7 @@ export default function Learning() {
     setNewUnit({ title: '', target_date: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Course.create({
+      const { data: created, error } = await supabase.from('courses').insert([{
         title: newUnit.title,
         target_date: newUnit.target_date,
         category: 'academic',
@@ -75,7 +75,9 @@ export default function Learning() {
         total_lessons: 0,
         lessons_completed: 0,
         status: 'active',
-      });
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       setCourses(prevCourses => prevCourses.map(c => c.id === tempId ? { ...tempUnit, ...created } : c));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -92,7 +94,7 @@ export default function Learning() {
     setNewCourse({ title: '', platform: '', total_lessons: 0, target_date: '', notes: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Course.create({
+      const { data: created, error } = await supabase.from('courses').insert([{
         title: newCourse.title,
         platform: newCourse.platform,
         total_lessons: Number(newCourse.total_lessons) || 0,
@@ -101,8 +103,10 @@ export default function Learning() {
         category: 'personal_development',
         color: '#7E9D8A',
         lessons_completed: 0,
-        status: 'active'
-      });
+        status: 'active',
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       // Merge created response with temp course to preserve all fields
       setCourses(prevCourses => prevCourses.map(c => c.id === tempId ? { ...tempCourse, ...created } : c));
     } catch (err) {
@@ -127,7 +131,7 @@ export default function Learning() {
     setNewBook({ title: '', author: '', total_pages: 0, target_date: '', takeaways: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Book.create({ 
+      const { data: created, error } = await supabase.from('books').insert([{
         title: newBook.title,
         author: newBook.author,
         total_pages: Number(newBook.total_pages) || 0,
@@ -135,8 +139,10 @@ export default function Learning() {
         takeaways: newBook.takeaways,
         color: '#7E9D8A',
         status: 'reading',
-        pages_read: 0
-      });
+        pages_read: 0,
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       // Merge created response with temp book to preserve all fields
       setBooks(prevBooks => prevBooks.map(b => b.id === tempId ? { ...tempBook, ...created } : b));
     } catch (err) {
@@ -149,7 +155,8 @@ export default function Learning() {
     // Optimistic state update using functional form to prevent race conditions
     setCourses(prevCourses => prevCourses.map(c => c.id === id ? { ...c, [field]: value } : c));
     try {
-      await base44.entities.Course.update(id, { [field]: value });
+      const { error } = await supabase.from('courses').update({ [field]: value }).eq('id', id).eq('user_id', user.id);
+      if (error) throw error;
     } catch (err) {
       // Revert on error - we need to refetch to get the correct state
       toast.error('Something went wrong, please try again');
@@ -161,7 +168,8 @@ export default function Learning() {
     // Optimistic state update using functional form to prevent race conditions
     setBooks(prevBooks => prevBooks.map(b => b.id === id ? { ...b, [field]: value } : b));
     try {
-      await base44.entities.Book.update(id, { [field]: value });
+      const { error } = await supabase.from('books').update({ [field]: value }).eq('id', id).eq('user_id', user.id);
+      if (error) throw error;
     } catch (err) {
       // Revert on error - we need to refetch to get the correct state
       toast.error('Something went wrong, please try again');
@@ -170,12 +178,14 @@ export default function Learning() {
   };
 
   const deleteCourse = async (id) => {
-    await base44.entities.Course.delete(id);
+    const { error } = await supabase.from('courses').delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
     setCourses(courses.filter(c => c.id !== id));
   };
 
   const deleteBook = async (id) => {
-    await base44.entities.Book.delete(id);
+    const { error } = await supabase.from('books').delete().eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
     setBooks(books.filter(b => b.id !== id));
   };
 

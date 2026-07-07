@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Check, Flame, Plus, Trash2, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import EmptyState from '@/components/EmptyState';
 import PullToRefresh from '@/components/PullToRefresh';
 import toast from 'react-hot-toast';
 import { todayStr, getStreakData } from '@/lib/format';
+import { useAuth } from '@/lib/AuthContext';
 
 const categories = {
   health: { color: '#7E9D8A', label: 'Health' },
@@ -18,6 +19,7 @@ const categories = {
 };
 
 export default function Habits() {
+  const { user } = useAuth();
   const [habits, setHabits] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,12 +34,12 @@ export default function Habits() {
   const loadData = async () => {
     try {
       const [h, hl] = await Promise.all([
-      base44.entities.Habit.filter({ active: true }),
-      base44.entities.HabitLog.list('-date', 500)]
-      );
-      setHabits(h);
-      setAllLogs(hl);
-      setLogs(hl.filter((l) => l.date === todayStr()));
+        supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
+        supabase.from('habit_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(500)
+      ]);
+      setHabits(h.data || []);
+      setAllLogs(hl.data || []);
+      setLogs((hl.data || []).filter((l) => l.date === todayStr()));
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,21 +52,25 @@ export default function Habits() {
     const existing = logs.find((l) => l.habit_id === habit.id && l.date === today);
 
     if (existing) {
-      await base44.entities.HabitLog.delete(existing.id);
+      const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id).eq('user_id', user.id);
+      if (error) throw error;
       setLogs(logs.filter((l) => l.id !== existing.id));
       setAllLogs(allLogs.filter((l) => l.id !== existing.id));
       // Decrement streak
       const currentStreak = Number(habit.current_streak) || 0;
       const newStreak = Math.max(0, currentStreak - 1);
-      await base44.entities.Habit.update(habit.id, { current_streak: newStreak, last_completed_date: null });
+      const { error: updateError } = await supabase.from('habits').update({ current_streak: newStreak, last_completed_date: null }).eq('id', habit.id).eq('user_id', user.id);
+      if (updateError) throw updateError;
       setHabits(habits.map((h) => h.id === habit.id ? { ...h, current_streak: newStreak, last_completed_date: null } : h));
     } else {
-      const created = await base44.entities.HabitLog.create({
+      const { data: created, error } = await supabase.from('habit_logs').insert([{
         habit_id: habit.id,
         habit_name: habit.name,
         date: today,
-        status: 'completed'
-      });
+        status: 'completed',
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       setLogs([...logs, created]);
       setAllLogs([...allLogs, created]);
       // Increment streak
@@ -72,11 +78,12 @@ export default function Habits() {
       const longestStreak = Number(habit.longest_streak) || 0;
       const newStreak = currentStreak + 1;
       const newLongest = Math.max(longestStreak, newStreak);
-      await base44.entities.Habit.update(habit.id, {
+      const { error: updateError } = await supabase.from('habits').update({
         current_streak: newStreak,
         longest_streak: newLongest,
         last_completed_date: today
-      });
+      }).eq('id', habit.id).eq('user_id', user.id);
+      if (updateError) throw updateError;
       setHabits(habits.map((h) => h.id === habit.id ? { ...h, current_streak: newStreak, longest_streak: newLongest, last_completed_date: today } : h));
     }
   };
@@ -90,11 +97,13 @@ export default function Habits() {
     setNewHabit({ name: '', category: 'discipline', frequency: 'daily', description: '' });
     setShowAdd(false);
     try {
-      const created = await base44.entities.Habit.create({
+      const { data: created, error } = await supabase.from('habits').insert([{
         ...newHabit,
         color: cat.color,
-        icon: 'CheckCircle'
-      });
+        icon: 'CheckCircle',
+        user_id: user.id,
+      }]).select().single();
+      if (error) throw error;
       setHabits(prev => prev.map(h => h.id === tempId ? created : h));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -103,7 +112,8 @@ export default function Habits() {
   };
 
   const deleteHabit = async (id) => {
-    await base44.entities.Habit.update(id, { active: false });
+    const { error } = await supabase.from('habits').update({ active: false }).eq('id', id).eq('user_id', user.id);
+    if (error) throw error;
     setHabits(habits.filter((h) => h.id !== id));
   };
 
