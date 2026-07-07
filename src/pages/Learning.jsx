@@ -40,7 +40,13 @@ export default function Learning() {
         base44.entities.Book.list(),
       ]);
       setCourses(c);
-      setBooks(b);
+      // Sanitize books data to prevent NaN errors
+      const sanitizedBooks = b.map(book => ({
+        ...book,
+        total_pages: Number(book.total_pages) || 0,
+        pages_read: Number(book.pages_read) || 0,
+      }));
+      setBooks(sanitizedBooks);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -93,7 +99,13 @@ export default function Learning() {
     setNewBook({ title: '', author: '', total_pages: 0, target_date: '', takeaways: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Book.create({ ...newBook, total_pages: Number(newBook.total_pages) || 0, color: '#7E9D8A' });
+      const created = await base44.entities.Book.create({ 
+        ...newBook, 
+        total_pages: Number(newBook.total_pages) || 0, 
+        color: '#7E9D8A',
+        status: 'reading',
+        pages_read: 0
+      });
       setBooks(prev => prev.map(b => b.id === tempId ? created : b));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -111,8 +123,15 @@ export default function Learning() {
   const updateBook = async (id, field, value) => {
     const book = books.find(b => b.id === id);
     const updated = { ...book, [field]: value };
-    await base44.entities.Book.update(id, { [field]: value });
+    // Optimistic state update
     setBooks(books.map(b => b.id === id ? updated : b));
+    try {
+      await base44.entities.Book.update(id, { [field]: value });
+    } catch (err) {
+      // Revert on error
+      setBooks(books.map(b => b.id === id ? book : b));
+      toast.error('Something went wrong, please try again');
+    }
   };
 
   const deleteCourse = async (id) => {
