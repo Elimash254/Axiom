@@ -60,6 +60,8 @@ export default function Finance() {
       setAccounts(a);
       setTransactions(t);
       
+      console.log('[Finance] Raw savings goals data:', sg);
+      
       // Sanitize holdings data to prevent NaN errors
       const sanitizedHoldings = h.map(holding => ({
         ...holding,
@@ -70,7 +72,13 @@ export default function Finance() {
       console.log('[Finance] Loaded and sanitized holdings:', sanitizedHoldings.length);
       setHoldings(sanitizedHoldings);
       
-      setSavingsGoals(sg);
+      // Sanitize savings goals data to prevent NaN errors
+      const sanitizedSavings = sg.map(goal => ({
+        ...goal,
+        target_amount: Number(goal.target_amount) || 0,
+        current_amount: Number(goal.current_amount) || 0,
+      }));
+      setSavingsGoals(sanitizedSavings);
       if (sanitizedHoldings.length > 0) refreshPrices(sanitizedHoldings);
     } catch (err) {console.error(err);} finally
     {setLoading(false);}

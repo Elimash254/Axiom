@@ -39,7 +39,15 @@ export default function Learning() {
         base44.entities.Course.list(),
         base44.entities.Book.list(),
       ]);
-      setCourses(c);
+      console.log('[Learning] Raw courses data:', c);
+      console.log('[Learning] Raw books data:', b);
+      // Sanitize courses data to prevent NaN errors
+      const sanitizedCourses = c.map(course => ({
+        ...course,
+        total_lessons: Number(course.total_lessons) || 0,
+        lessons_completed: Number(course.lessons_completed) || 0,
+      }));
+      setCourses(sanitizedCourses);
       // Sanitize books data to prevent NaN errors
       const sanitizedBooks = b.map(book => ({
         ...book,
@@ -83,7 +91,7 @@ export default function Learning() {
     setNewCourse({ title: '', platform: '', total_lessons: 0, target_date: '', notes: '' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Course.create({ ...newCourse, total_lessons: Number(newCourse.total_lessons) || 0, category: 'personal_development', color: '#7E9D8A' });
+      const created = await base44.entities.Course.create({ ...newCourse, total_lessons: Number(newCourse.total_lessons) || 0, category: 'personal_development', color: '#7E9D8A', lessons_completed: 0, status: 'active' });
       setCourses(prev => prev.map(c => c.id === tempId ? created : c));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -275,7 +283,10 @@ export default function Learning() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Active</p>
               )}
               {personalCourses.filter(c => c.status === 'active').map(course => {
-                const pct = course.total_lessons > 0 ? (course.lessons_completed / course.total_lessons) * 100 : 0;
+                const currentVal = Number(course.lessons_completed) || 0;
+                const totalLimit = Number(course.total_lessons) || 0;
+                const progressPercentage = totalLimit > 0 ? Math.min(100, Math.round((currentVal / totalLimit) * 100)) : 0;
+                console.log('[Learning] Course progress:', course.title, 'currentVal:', currentVal, 'totalLimit:', totalLimit, 'progressPercentage:', progressPercentage);
                 return (
                   <div key={course.id} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
@@ -290,12 +301,15 @@ export default function Learning() {
                       <button onClick={() => deleteCourse(course.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground">{course.lessons_completed}/{course.total_lessons} lessons</span>
-                      <span className="text-xs font-semibold text-sage">{Math.round(pct)}%</span>
+                      <span className="text-xs text-muted-foreground">{currentVal}/{totalLimit} lessons</span>
+                      <span className="text-xs font-semibold text-sage">{progressPercentage}%</span>
                     </div>
-                    <ProgressBar value={course.lessons_completed} max={course.total_lessons} color="#7E9D8A" height={6} />
+                    <ProgressBar value={currentVal} max={totalLimit} color="#7E9D8A" height={6} />
                     <div className="flex items-center gap-2 mt-3">
-                      <Button size="sm" variant="outline" onClick={() => updateCourse(course.id, 'lessons_completed', Math.max(0, course.lessons_completed - 1))} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        const currentLessons = Number(course.lessons_completed) || 0;
+                        updateCourse(course.id, 'lessons_completed', Math.max(0, currentLessons - 1));
+                      }} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
                       <Input
                         type="number"
                         value={course.lessons_completed}
@@ -303,13 +317,15 @@ export default function Learning() {
                         className="bg-white/5 border-white/10 h-7 text-center text-sm"
                       />
                       <Button size="sm" variant="outline" onClick={() => {
-                        const newVal = course.lessons_completed + 1;
+                        const currentLessons = Number(course.lessons_completed) || 0;
+                        const totalLessons = Number(course.total_lessons) || 0;
+                        const newVal = currentLessons + 1;
                         updateCourse(course.id, 'lessons_completed', newVal);
-                        if (course.total_lessons > 0 && newVal >= course.total_lessons) {
+                        if (totalLessons > 0 && newVal >= totalLessons) {
                           updateCourse(course.id, 'status', 'completed');
                         }
                       }} className="glass border-white/10 h-7 w-7 p-0"><Plus className="w-3 h-3" /></Button>
-                      {course.total_lessons > 0 && course.lessons_completed >= course.total_lessons && (
+                      {totalLimit > 0 && currentVal >= totalLimit && (
                         <Button size="sm" onClick={() => updateCourse(course.id, 'status', 'completed')} className="bg-sage hover:bg-sage/90 text-background h-7 ml-auto">Complete</Button>
                       )}
                     </div>
@@ -361,11 +377,11 @@ export default function Learning() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Reading</p>
               )}
               {books.filter(b => b.status === 'reading').map(book => {
-                const totalPages = Number(book.total_pages) || 0;
-                const pagesRead = Number(book.pages_read) || 0;
-                const pct = totalPages > 0 ? Math.min(100, Math.max(0, (pagesRead / totalPages) * 100)) : 0;
-                const remaining = totalPages - pagesRead;
-                console.log('[Learning] Book progress:', book.title, 'pagesRead:', pagesRead, 'totalPages:', totalPages, 'pct:', pct);
+                const currentVal = Number(book.pages_read) || 0;
+                const totalLimit = Number(book.total_pages) || 0;
+                const progressPercentage = totalLimit > 0 ? Math.min(100, Math.round((currentVal / totalLimit) * 100)) : 0;
+                const remaining = totalLimit - currentVal;
+                console.log('[Learning] Book progress:', book.title, 'currentVal:', currentVal, 'totalLimit:', totalLimit, 'progressPercentage:', progressPercentage);
                 return (
                   <div key={book.id} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
@@ -378,11 +394,11 @@ export default function Learning() {
                       <button onClick={() => deleteBook(book.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground">{pagesRead}/{totalPages} pages</span>
-                      <span className="text-xs font-semibold text-sage">{Math.round(pct)}%</span>
+                      <span className="text-xs text-muted-foreground">{currentVal}/{totalLimit} pages</span>
+                      <span className="text-xs font-semibold text-sage">{progressPercentage}%</span>
                     </div>
-                    <ProgressBar value={pagesRead} max={totalPages} color="#7E9D8A" height={6} />
-                    {totalPages > 0 && remaining > 0 && (
+                    <ProgressBar value={currentVal} max={totalLimit} color="#7E9D8A" height={6} />
+                    {totalLimit > 0 && remaining > 0 && (
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5" />
                         Est. {formatReadingTime(remaining * readingSpeed)}

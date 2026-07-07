@@ -31,7 +31,8 @@ export default function SavingsCard({ goal, onDelete, onUpdate }) {
 
   const currentAmount = Number(goal.current_amount) || 0;
   const targetAmount = Number(goal.target_amount) || 0;
-  const pct = targetAmount > 0 ? Math.min(100, Math.max(0, (currentAmount / targetAmount) * 100)) : 0;
+  const progressPercentage = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0;
+  console.log('[SavingsCard] Goal progress:', goal.title, 'currentAmount:', currentAmount, 'targetAmount:', targetAmount, 'progressPercentage:', progressPercentage);
 
   return (
     <div className="glass rounded-2xl p-4">
@@ -48,7 +49,7 @@ export default function SavingsCard({ goal, onDelete, onUpdate }) {
         </button>
       </div>
       <ProgressBar value={currentAmount} max={targetAmount} color="#C47D57" height={8} />
-      <p className="text-xs text-muted-foreground mt-1 text-right">{Math.round(pct)}%</p>
+      <p className="text-xs text-muted-foreground mt-1 text-right">{progressPercentage}%</p>
       <div className="flex gap-2 mt-3">
         <button
           onClick={() => setShowForm(showForm === 'add' ? null : 'add')}
