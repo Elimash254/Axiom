@@ -83,6 +83,81 @@ export default function Dashboard() {
         setLoading(false);
       }
     })();
+
+    // Set up real-time subscriptions for all dashboard entities
+    const unsubscribers = [];
+    
+    const handleRealtimeUpdate = (payload) => {
+      console.log('[Dashboard] Real-time update received:', payload);
+      // Refresh data on any change
+      const refreshData = async () => {
+        try {
+          console.log('[Dashboard] Refreshing data after realtime update...');
+          const today = todayStr();
+          const [h, hl, g, m, c, b, a, t, ho, e, sg] = await Promise.all([
+            base44.entities.Habit.filter({ active: true }),
+            base44.entities.HabitLog.filter({ date: today }),
+            base44.entities.Goal.filter({ status: 'in_progress' }),
+            base44.entities.Milestone.list(),
+            base44.entities.Course.filter({ status: 'active' }),
+            base44.entities.Book.filter({ status: 'reading' }),
+            base44.entities.Account.list(),
+            base44.entities.Transaction.list('-date', 50),
+            base44.entities.Holding.list(),
+            base44.entities.CalendarEvent.filter({ date: today }),
+            base44.entities.SavingsGoal.filter({ status: 'active' })
+          ]);
+
+          setHabits(h);
+          setHabitLogs(hl);
+          setGoals(g);
+          setMilestones(m);
+          setCourses(c);
+          setBooks(b);
+          setAccounts(a);
+          setTransactions(t);
+          setHoldings(ho);
+          setEvents(e);
+          setSavingsGoals(sg);
+
+          // Fetch latest reviews
+          try {
+            const reviews = await base44.entities.WeeklyReview.list('-week_starting', 1);
+            setReview(reviews[0] || null);
+          } catch {}
+
+          if (ho.length > 0) {
+            fetchLivePrices(ho);
+          }
+          
+          console.log('[Dashboard] Data refresh complete');
+        } catch (err) {
+          console.error('[Dashboard] Error refreshing data:', err);
+        }
+      };
+
+      refreshData();
+    };
+
+    // Subscribe to all relevant entities
+    const entitiesToSubscribe = [
+      'Habit', 'HabitLog', 'Goal', 'Milestone', 'Course', 'Book',
+      'Account', 'Transaction', 'Holding', 'CalendarEvent', 'SavingsGoal', 'WeeklyReview'
+    ];
+
+    console.log('[Dashboard] Setting up realtime subscriptions for:', entitiesToSubscribe);
+    
+    entitiesToSubscribe.forEach(entityName => {
+      const unsubscribe = base44.entities[entityName].subscribe(handleRealtimeUpdate);
+      unsubscribers.push(unsubscribe);
+    });
+
+    console.log('[Dashboard] Realtime subscriptions set up successfully');
+
+    return () => {
+      console.log('[Dashboard] Cleaning up realtime subscriptions');
+      unsubscribers.forEach(unsubscribe => unsubscribe());
+    };
   }, []);
 
   const fetchLivePrices = async (holdingsData) => {

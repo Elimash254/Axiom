@@ -1,13 +1,13 @@
 import { authStorage } from '@/lib/auth-storage';
-import { createEntityStore } from '@/lib/entity-storage';
+import { createSupabaseEntityStore } from '@/lib/supabaseDataService';
 
 /**
- * Local compatibility client for entity storage.
- * Entity data is isolated per authenticated user in localStorage.
+ * Base44 compatibility client using Supabase for data storage.
+ * Entity data is stored in Supabase with real-time sync support.
  */
 export const base44 = {
   auth: authStorage,
-  entities: createEntityStore(),
+  entities: createSupabaseEntityStore(),
   integrations: {
     Core: {
       async UploadFile({ file }) {

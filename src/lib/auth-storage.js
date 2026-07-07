@@ -9,18 +9,25 @@ export async function getSession() {
 }
 
 export function getCurrentUserId() {
-  // This is a synchronous fallback for entity-storage.js
-  // In practice, AuthContext manages the async session
-  const sessionStr = localStorage.getItem('sb-' + import.meta.env.VITE_SUPABASE_URL?.replace(/https:\/\//, '').split('.')[0] + '-auth-token');
-  if (sessionStr) {
-    try {
-      const session = JSON.parse(sessionStr);
-      return session?.user?.id || null;
-    } catch {
-      return null;
+  // Try multiple ways to get the user ID
+  try {
+    // Method 1: Try Supabase session
+    const sessionKeys = Object.keys(localStorage).filter(key => key.includes('sb-') && key.includes('auth'));
+    for (const key of sessionKeys) {
+      try {
+        const session = JSON.parse(localStorage.getItem(key));
+        if (session?.user?.id) return session.user.id;
+      } catch {}
     }
+    
+    // Method 2: Try direct user_id key (legacy)
+    const directUserId = localStorage.getItem('user_id');
+    if (directUserId) return directUserId;
+    
+    return null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export function notifyAuthChange() {

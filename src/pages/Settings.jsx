@@ -4,7 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { Check, Download, Palette, Bell, Sun, Moon, Trash2, UserX } from 'lucide-react';
+import { Check, Download, Palette, Bell, Sun, Moon, Trash2, UserX, Database, RefreshCw } from 'lucide-react';
+import { migrateToSupabase, checkMigrationStatus } from '@/lib/migrateToSupabase';
 
 const ACCENTS = [
   { name: 'Copper', hsl: '21 48% 56%', preview: '#C47D57' },
@@ -20,6 +21,8 @@ export default function Settings() {
   const [theme, setTheme] = useState('dark');
   const [deleting, setDeleting] = useState(false);
   const [clearingData, setClearingData] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState(null);
 
   useEffect(() => {
     const savedAccent = localStorage.getItem('app_accent') || '21 48% 56%';
@@ -28,6 +31,15 @@ export default function Settings() {
     setAccent(savedAccent);
     setAlarmsEnabled(savedAlarms);
     setTheme(savedTheme);
+
+    // Check migration status
+    checkMigrationStatus().then(result => {
+      console.log('[Settings] Migration status:', result);
+      setMigrationStatus(result);
+    }).catch(err => {
+      console.error('[Settings] Migration status check failed:', err);
+      setMigrationStatus({ hasSupabaseData: false, hasLocalData: false, needsMigration: false, canClearLocal: false });
+    });
   }, []);
 
   const applyTheme = (newTheme) => {
@@ -96,6 +108,23 @@ export default function Settings() {
       console.error(err);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleMigrate = async () => {
+    setMigrating(true);
+    try {
+      const result = await migrateToSupabase();
+      console.log('Migration result:', result);
+      // Refresh migration status
+      const newStatus = await checkMigrationStatus();
+      setMigrationStatus(newStatus);
+      alert(`Migration complete!\n\nTotal: ${result.total}\nSuccess: ${result.success}\nFailed: ${result.failed}`);
+    } catch (error) {
+      console.error('Migration error:', error);
+      alert('Migration failed. Please check the console for details.');
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -253,6 +282,61 @@ export default function Settings() {
             </>
           )}
         </button>
+      </div>
+
+      {/* Data Migration Section */}
+      <div className="glass rounded-2xl p-5 mt-4 border border-copper/20">
+        <div className="flex items-center gap-2 mb-4">
+          <Database className="w-4 h-4 text-copper" />
+          <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-copper">
+            Cloud Sync
+          </h2>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          {migrationStatus ? (
+            migrationStatus.needsMigration 
+              ? 'You have local data that can be migrated to Supabase for multi-device sync and real-time updates.'
+              : migrationStatus.hasSupabaseData
+              ? 'Your data is synced with Supabase for multi-device access.'
+              : 'No data found to migrate.'
+          ) : 'Checking sync status...'}
+        </p>
+        {migrationStatus?.needsMigration && (
+          <button
+            onClick={handleMigrate}
+            disabled={migrating}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-copper hover:bg-copper/90 text-white font-semibold text-sm disabled:opacity-50 transition-colors"
+          >
+            {migrating ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Migrating...
+              </>
+            ) : (
+              <>
+                <Database className="w-4 h-4" />
+                Migrate to Cloud
+              </>
+            )}
+          </button>
+        )}
+        {migrationStatus?.canClearLocal && (
+          <button
+            onClick={() => {
+              if (confirm('Clear local data? Your cloud data will remain intact.')) {
+                const userId = localStorage.getItem('user_id');
+                if (userId) {
+                  localStorage.removeItem(`axiom_user_data_${userId}`);
+                  setMigrationStatus({ ...migrationStatus, hasLocalData: false });
+                }
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl glass-strong font-semibold text-sm mt-2 transition-colors hover:bg-white/5"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear Local Cache
+          </button>
+        )}
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground mt-8">AXIOMFLOW v1.0 — Your personal operating system</p>
