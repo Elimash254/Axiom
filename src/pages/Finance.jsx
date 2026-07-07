@@ -199,12 +199,12 @@ export default function Finance() {
   const addAccount = async () => {
     if (!newAccount.name.trim()) return;
     const tempId = 'temp-' + Date.now();
-    const tempAccount = { ...newAccount, id: tempId };
+    const tempAccount = { ...newAccount, id: tempId, balance: Number(newAccount.balance) || 0 };
     setAccounts(prev => [...prev, tempAccount]);
     setNewAccount({ name: '', type: 'bank', balance: 0 });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Account.create(newAccount);
+      const created = await base44.entities.Account.create({ ...newAccount, balance: Number(newAccount.balance) || 0 });
       setAccounts(prev => prev.map(a => a.id === tempId ? created : a));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -215,12 +215,12 @@ export default function Finance() {
   const addTxn = async () => {
     if (!newTxn.description.trim() || !newTxn.amount) return;
     const tempId = 'temp-' + Date.now();
-    const tempTxn = { ...newTxn, id: tempId, amount: Number(newTxn.amount) };
+    const tempTxn = { ...newTxn, id: tempId, amount: Number(newTxn.amount) || 0 };
     setTransactions(prev => [tempTxn, ...prev]);
     setNewTxn({ description: '', amount: 0, type: 'expense', category: 'food', date: todayStr() });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Transaction.create({ ...newTxn, amount: Number(newTxn.amount) });
+      const created = await base44.entities.Transaction.create({ ...newTxn, amount: Number(newTxn.amount) || 0 });
       setTransactions(prev => prev.map(t => t.id === tempId ? created : t));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -231,15 +231,15 @@ export default function Finance() {
   const addSavings = async () => {
     if (!newSavings.title.trim() || !newSavings.target_amount) return;
     const tempId = 'temp-' + Date.now();
-    const tempSavings = { ...newSavings, id: tempId, target_amount: Number(newSavings.target_amount), current_amount: Number(newSavings.current_amount) };
+    const tempSavings = { ...newSavings, id: tempId, target_amount: Number(newSavings.target_amount) || 0, current_amount: Number(newSavings.current_amount) || 0 };
     setSavingsGoals(prev => [...prev, tempSavings]);
     setNewSavings({ title: '', target_amount: 0, current_amount: 0, target_date: '' });
     setShowAdd(null);
     try {
       const created = await base44.entities.SavingsGoal.create({
         ...newSavings,
-        target_amount: Number(newSavings.target_amount),
-        current_amount: Number(newSavings.current_amount)
+        target_amount: Number(newSavings.target_amount) || 0,
+        current_amount: Number(newSavings.current_amount) || 0
       });
       setSavingsGoals(prev => prev.map(s => s.id === tempId ? created : s));
     } catch (err) {

@@ -54,7 +54,8 @@ export default function Habits() {
       setLogs(logs.filter((l) => l.id !== existing.id));
       setAllLogs(allLogs.filter((l) => l.id !== existing.id));
       // Decrement streak
-      const newStreak = Math.max(0, habit.current_streak - 1);
+      const currentStreak = Number(habit.current_streak) || 0;
+      const newStreak = Math.max(0, currentStreak - 1);
       await base44.entities.Habit.update(habit.id, { current_streak: newStreak, last_completed_date: null });
       setHabits(habits.map((h) => h.id === habit.id ? { ...h, current_streak: newStreak, last_completed_date: null } : h));
     } else {
@@ -67,8 +68,10 @@ export default function Habits() {
       setLogs([...logs, created]);
       setAllLogs([...allLogs, created]);
       // Increment streak
-      const newStreak = habit.current_streak + 1;
-      const newLongest = Math.max(habit.longest_streak, newStreak);
+      const currentStreak = Number(habit.current_streak) || 0;
+      const longestStreak = Number(habit.longest_streak) || 0;
+      const newStreak = currentStreak + 1;
+      const newLongest = Math.max(longestStreak, newStreak);
       await base44.entities.Habit.update(habit.id, {
         current_streak: newStreak,
         longest_streak: newLongest,
