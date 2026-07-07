@@ -29,6 +29,28 @@ function toCamelCase(str) {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+// Convert entity name to table name (singular to plural)
+function entityToTableName(entityName) {
+  const tableMap = {
+    'Habit': 'habits',
+    'HabitLog': 'habit_logs',
+    'Goal': 'goals',
+    'Milestone': 'milestones',
+    'Course': 'courses',
+    'Topic': 'topics',
+    'Book': 'books',
+    'Flashcard': 'flashcards',
+    'Account': 'accounts',
+    'Transaction': 'transactions',
+    'Holding': 'holdings',
+    'SavingsGoal': 'savings_goals',
+    'CalendarEvent': 'calendar_events',
+    'Alarm': 'alarms',
+    'WeeklyReview': 'weekly_reviews',
+  };
+  return tableMap[entityName] || toSnakeCase(entityName).replace(/^_/, '').toLowerCase();
+}
+
 // Transform object keys from camelCase to snake_case
 function toSnakeCaseObject(obj) {
   if (!obj || typeof obj !== 'object') return obj;
@@ -74,7 +96,7 @@ function parseSort(sortArg) {
 }
 
 function createEntityApi(tableName) {
-  const snakeTableName = toSnakeCase(tableName);
+  const snakeTableName = entityToTableName(tableName);
   
   return {
     async list(sortArg, limit) {
