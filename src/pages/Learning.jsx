@@ -365,6 +365,7 @@ export default function Learning() {
                 const pagesRead = Number(book.pages_read) || 0;
                 const pct = totalPages > 0 ? Math.min(100, Math.max(0, (pagesRead / totalPages) * 100)) : 0;
                 const remaining = totalPages - pagesRead;
+                console.log('[Learning] Book progress:', book.title, 'pagesRead:', pagesRead, 'totalPages:', totalPages, 'pct:', pct);
                 return (
                   <div key={book.id} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
