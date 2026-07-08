@@ -435,6 +435,46 @@ export default function Dashboard() {
         </div>
       }
 
+      {/* Today's Events */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Today's Schedule</h2>
+          <Link to="/calendar" className="text-xs text-rose-400">Calendar</Link>
+        </div>
+        {events.length > 0 ?
+        <div className="space-y-2">
+            {events.sort((a, b) => (a?.time ?? '').localeCompare(b?.time ?? '')).map((ev) =>
+          <div key={ev?.id ?? ''} className="glass rounded-xl p-3 flex items-center gap-3">
+                <div className="w-1 h-8 rounded-full" style={{ backgroundColor: ev?.color ?? '#f43f5e' }}></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{ev?.title ?? 'Untitled Event'}</p>
+                  {ev?.time && <p className="text-xs text-muted-foreground">{ev.time}</p>}
+                </div>
+              </div>
+          )}
+          </div> :
+
+        <div className="glass rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground">Nothing scheduled for today</p>
+          </div>
+        }
+      </div>
+
+      {/* Weekly Review Badge */}
+      <Link to="/calendar" className="block mb-6">
+        <div className="glass rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-copper/15 flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-copper" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">Weekly Review</p>
+            <p className="text-xs text-muted-foreground">
+              {review ? `Last reviewed: ${review?.week_starting ?? 'Unknown'}` : 'Not done this week — take 5 min to reflect'}
+            </p>
+          </div>
+        </div>
+      </Link>
+
       {/* Finance At a Glance - Compact */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -463,46 +503,6 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
-
-      {/* Today's Events */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Today's Schedule</h2>
-          <Link to="/calendar" className="text-xs text-rose-400">Calendar</Link>
-        </div>
-        {events.length > 0 ?
-        <div className="space-y-2">
-            {events.sort((a, b) => (a?.time ?? '').localeCompare(b?.time ?? '')).map((ev) =>
-          <div key={ev?.id ?? ''} className="glass rounded-xl p-3 flex items-center gap-3">
-                <div className="w-1 h-8 rounded-full" style={{ backgroundColor: ev?.color ?? '#f43f5e' }}></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{ev?.title ?? 'Untitled Event'}</p>
-                  {ev?.time && <p className="text-xs text-muted-foreground">{ev.time}</p>}
-                </div>
-              </div>
-          )}
-          </div> :
-
-        <div className="glass rounded-xl p-4 text-center">
-            <p className="text-sm text-muted-foreground">Nothing scheduled for today</p>
-          </div>
-        }
-      </div>
-
-      {/* Weekly Review Badge */}
-      <Link to="/calendar" className="block">
-        <div className="glass rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-copper/15 flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-copper" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium">Weekly Review</p>
-            <p className="text-xs text-muted-foreground">
-              {review ? `Last reviewed: ${review?.week_starting ?? 'Unknown'}` : 'Not done this week — take 5 min to reflect'}
-            </p>
-          </div>
-        </div>
-      </Link>
       </div>
       </PullToRefresh>
       </motion.div>

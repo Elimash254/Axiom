@@ -4,9 +4,9 @@ import { X, User, Settings, Target, Calendar, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const drawerItems = [
+  { to: '/profile', label: 'Profile', icon: User },
   { to: '/goals', label: 'Goals', icon: Target },
   { to: '/calendar', label: 'Agenda', icon: Calendar },
-  { to: '/profile', label: 'Profile', icon: User },
   { to: '/settings', label: 'Account Settings', icon: Settings },
 ];
 
