@@ -197,7 +197,104 @@ export default function Learning() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-white/10 border-t-white rounded-full animate-spin"></div></div>;
+    return (
+      <div className="px-5 pt-12 pb-8">
+        {/* Header Skeleton */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex-1">
+            <div className="h-4 w-32 animate-pulse bg-neutral-800/60 rounded mb-2"></div>
+            <div className="h-8 w-48 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="h-9 w-20 animate-pulse bg-neutral-800/60 rounded"></div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="grid w-full grid-cols-4 bg-white/5 mb-4 h-10 animate-pulse bg-neutral-800/60 rounded"></div>
+
+        {/* Academic Units Skeleton */}
+        <div className="space-y-3 mb-6">
+          <div className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+            <div className="flex items-start gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+              <div className="flex-1">
+                <div className="h-4 w-40 bg-neutral-700/50 rounded mb-2"></div>
+                <div className="h-3 w-24 bg-neutral-700/50 rounded"></div>
+              </div>
+              <div className="w-8 h-8 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="h-7 w-24 bg-neutral-700/50 rounded mt-2"></div>
+          </div>
+          <div className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+            <div className="flex items-start gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+              <div className="flex-1">
+                <div className="h-4 w-36 bg-neutral-700/50 rounded mb-2"></div>
+                <div className="h-3 w-20 bg-neutral-700/50 rounded"></div>
+              </div>
+              <div className="w-8 h-8 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="h-7 w-24 bg-neutral-700/50 rounded mt-2"></div>
+          </div>
+        </div>
+
+        {/* Personal Courses Skeleton */}
+        <div className="space-y-3 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 w-20 animate-pulse bg-neutral-800/60 rounded"></div>
+            <div className="h-7 w-12 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+              <div className="flex-1">
+                <div className="h-4 w-48 bg-neutral-700/50 rounded mb-2"></div>
+                <div className="h-3 w-32 bg-neutral-700/50 rounded mb-1"></div>
+                <div className="h-3 w-24 bg-neutral-700/50 rounded"></div>
+              </div>
+              <div className="w-8 h-8 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="h-3 w-16 bg-neutral-700/50 rounded"></div>
+              <div className="h-3 w-8 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="h-1 w-full bg-neutral-700/50 rounded"></div>
+            <div className="flex items-center gap-2 mt-3">
+              <div className="h-7 w-7 bg-neutral-700/50 rounded"></div>
+              <div className="h-7 w-16 bg-neutral-700/50 rounded"></div>
+              <div className="h-7 w-7 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Books Skeleton */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-7 w-20 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+              <div className="flex-1">
+                <div className="h-4 w-40 bg-neutral-700/50 rounded mb-2"></div>
+                <div className="h-3 w-24 bg-neutral-700/50 rounded mb-1"></div>
+                <div className="h-3 w-20 bg-neutral-700/50 rounded"></div>
+              </div>
+              <div className="w-8 h-8 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="h-3 w-16 bg-neutral-700/50 rounded"></div>
+              <div className="h-3 w-8 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="h-1 w-full bg-neutral-700/50 rounded"></div>
+            <div className="flex items-center gap-2 mt-3">
+              <div className="h-7 w-7 bg-neutral-700/50 rounded"></div>
+              <div className="h-7 w-16 bg-neutral-700/50 rounded"></div>
+              <div className="h-7 w-12 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const academicCourses = courses.filter(c => c.category === 'academic');
@@ -254,38 +351,38 @@ export default function Learning() {
                   {academicCourses.filter(c => c.status === 'active').length > 0 && (
                     <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Active Units</p>
                   )}
-                  {academicCourses.filter(c => c.status === 'active').map(course => (
-                    <div key={course.id} className="glass rounded-2xl p-4">
+                  {academicCourses.filter(c => c?.status === 'active').map(course => (
+                    <div key={course?.id ?? ''} className="glass rounded-2xl p-4">
                       <div className="flex items-start gap-3 mb-1">
                         <div className="w-10 h-10 rounded-xl bg-sage/15 flex items-center justify-center flex-shrink-0">
                           <FlaskConical className="w-5 h-5 text-sage" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base">{course.title}</h3>
-                          {course.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
+                          <h3 className="font-semibold text-base">{course?.title ?? 'Untitled Unit'}</h3>
+                          {course?.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
                         </div>
-                        <button onClick={() => setExpandedUnit(expandedUnit === course.id ? null : course.id)} className="text-muted-foreground hover:text-foreground p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={expandedUnit === course.id ? "Collapse" : "Expand"}>
-                          {expandedUnit === course.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        <button onClick={() => setExpandedUnit(expandedUnit === course?.id ? null : course?.id)} className="text-muted-foreground hover:text-foreground p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={expandedUnit === course?.id ? "Collapse" : "Expand"}>
+                          {expandedUnit === course?.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         </button>
-                        <button onClick={() => deleteCourse(course.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => deleteCourse(course?.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <Button size="sm" variant="outline" onClick={() => setDeepWorkCourse(course)} className="glass border-white/10 h-7 text-xs text-copper">
                           <Timer className="w-3 h-3" /> Start Deep Work
                         </Button>
                       </div>
-                      {expandedUnit === course.id && <TopicList courseId={course.id} courseTitle={course.title} />}
+                      {expandedUnit === course?.id && <TopicList courseId={course?.id} courseTitle={course?.title ?? 'Untitled Unit'} />}
                     </div>
                   ))}
 
                   {academicCourses.filter(c => c.status === 'completed').length > 0 && (
                     <>
                       <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Completed</p>
-                      {academicCourses.filter(c => c.status === 'completed').map(course => (
-                        <div key={course.id} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
+                      {academicCourses.filter(c => c?.status === 'completed').map(course => (
+                        <div key={course?.id ?? ''} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
                           <Check className="w-5 h-5 text-sage" />
-                          <span className="text-base flex-1 line-through">{course.title}</span>
-                          <button onClick={() => deleteCourse(course.id)} className="!text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                          <span className="text-base flex-1 line-through">{course?.title ?? 'Untitled Unit'}</span>
+                          <button onClick={() => deleteCourse(course?.id)} className="!text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       ))}
                     </>
@@ -319,23 +416,23 @@ export default function Learning() {
               {personalCourses.filter(c => c.status === 'active').length > 0 && (
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Active</p>
               )}
-              {personalCourses.filter(c => c.status === 'active').map(course => {
-                const currentVal = Number(course.lessons_completed) || 0;
-                const totalLimit = Number(course.total_lessons) || 0;
+              {personalCourses.filter(c => c?.status === 'active').map(course => {
+                const currentVal = Number(course?.lessons_completed) || 0;
+                const totalLimit = Number(course?.total_lessons) || 0;
                 const progressPercentage = totalLimit > 0 ? Math.min(100, Math.round((currentVal / totalLimit) * 100)) : 0;
-                console.log('[Learning] Course progress:', course.title, 'currentVal:', currentVal, 'totalLimit:', totalLimit, 'progressPercentage:', progressPercentage);
+                console.log('[Learning] Course progress:', course?.title, 'currentVal:', currentVal, 'totalLimit:', totalLimit, 'progressPercentage:', progressPercentage);
                 return (
-                  <div key={course.id} className="glass rounded-2xl p-4">
+                  <div key={course?.id ?? ''} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl bg-sage/15 flex items-center justify-center flex-shrink-0">
                         <Lightbulb className="w-5 h-5 text-sage" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base">{course.title}</h3>
-                        {course.platform && <p className="text-sm text-muted-foreground">{course.platform}</p>}
-                        {course.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
+                        <h3 className="font-semibold text-base">{course?.title ?? 'Untitled Course'}</h3>
+                        {course?.platform && <p className="text-sm text-muted-foreground">{course.platform}</p>}
+                        {course?.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
                       </div>
-                      <button onClick={() => deleteCourse(course.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => deleteCourse(course?.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-sm text-muted-foreground">{currentVal}/{totalLimit} lessons</span>
@@ -344,26 +441,26 @@ export default function Learning() {
                     <ProgressBar value={currentVal} max={totalLimit} color="#7E9D8A" height={6} />
                     <div className="flex items-center gap-2 mt-3">
                       <Button size="sm" variant="outline" onClick={() => {
-                        const currentLessons = Number(course.lessons_completed) || 0;
-                        updateCourse(course.id, 'lessons_completed', Math.max(0, currentLessons - 1));
+                        const currentLessons = Number(course?.lessons_completed) || 0;
+                        updateCourse(course?.id, 'lessons_completed', Math.max(0, currentLessons - 1));
                       }} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
                       <Input
                         type="number"
-                        value={course.lessons_completed}
-                        onChange={e => updateCourse(course.id, 'lessons_completed', Number(e.target.value))}
+                        value={course?.lessons_completed ?? 0}
+                        onChange={e => updateCourse(course?.id, 'lessons_completed', Number(e.target.value))}
                         className="bg-white/5 border-white/10 h-7 text-center text-sm"
                       />
                       <Button size="sm" variant="outline" onClick={() => {
-                        const currentLessons = Number(course.lessons_completed) || 0;
-                        const totalLessons = Number(course.total_lessons) || 0;
+                        const currentLessons = Number(course?.lessons_completed) || 0;
+                        const totalLessons = Number(course?.total_lessons) || 0;
                         const newVal = currentLessons + 1;
-                        updateCourse(course.id, 'lessons_completed', newVal);
+                        updateCourse(course?.id, 'lessons_completed', newVal);
                         if (totalLessons > 0 && newVal >= totalLessons) {
-                          updateCourse(course.id, 'status', 'completed');
+                          updateCourse(course?.id, 'status', 'completed');
                         }
                       }} className="glass border-white/10 h-7 w-7 p-0"><Plus className="w-3 h-3" /></Button>
                       {totalLimit > 0 && currentVal >= totalLimit && (
-                        <Button size="sm" onClick={() => updateCourse(course.id, 'status', 'completed')} className="bg-sage hover:bg-sage/90 text-background h-7 ml-auto">Complete</Button>
+                        <Button size="sm" onClick={() => updateCourse(course?.id, 'status', 'completed')} className="bg-sage hover:bg-sage/90 text-background h-7 ml-auto">Complete</Button>
                       )}
                     </div>
                   </div>
@@ -373,11 +470,11 @@ export default function Learning() {
               {personalCourses.filter(c => c.status === 'completed').length > 0 && (
                 <>
                   <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Completed</p>
-                  {personalCourses.filter(c => c.status === 'completed').map(course => (
-                    <div key={course.id} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
+                  {personalCourses.filter(c => c?.status === 'completed').map(course => (
+                    <div key={course?.id ?? ''} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
                       <Check className="w-5 h-5 text-sage" />
-                      <span className="text-base flex-1 line-through">{course.title}</span>
-                      <button onClick={() => deleteCourse(course.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                      <span className="text-base flex-1 line-through">{course?.title ?? 'Untitled Course'}</span>
+                      <button onClick={() => deleteCourse(course?.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </>
@@ -413,22 +510,22 @@ export default function Learning() {
               {books.filter(b => b.status === 'reading').length > 0 && (
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Reading</p>
               )}
-              {books.filter(b => b.status === 'reading').map(book => {
-                const currentVal = Number(book.pages_read) || 0;
-                const totalLimit = Number(book.total_pages) || 0;
+              {books.filter(b => b?.status === 'reading').map(book => {
+                const currentVal = Number(book?.pages_read) || 0;
+                const totalLimit = Number(book?.total_pages) || 0;
                 const progressPercentage = totalLimit > 0 ? Math.min(100, Math.round((currentVal / totalLimit) * 100)) : 0;
                 const remaining = totalLimit - currentVal;
-                console.log('[Learning] Book progress:', book.title, 'currentVal:', currentVal, 'totalLimit:', totalLimit, 'progressPercentage:', progressPercentage);
+                console.log('[Learning] Book progress:', book?.title, 'currentVal:', currentVal, 'totalLimit:', totalLimit, 'progressPercentage:', progressPercentage);
                 return (
-                  <div key={book.id} className="glass rounded-2xl p-4">
+                  <div key={book?.id ?? ''} className="glass rounded-2xl p-4">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl bg-sage/15 flex items-center justify-center flex-shrink-0 text-lg">📖</div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base">{book.title}</h3>
-                        {book.author && <p className="text-sm text-muted-foreground">{book.author}</p>}
-                        {book.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(book.target_date)}</p>}
+                        <h3 className="font-semibold text-base">{book?.title ?? 'Untitled Book'}</h3>
+                        {book?.author && <p className="text-sm text-muted-foreground">{book.author}</p>}
+                        {book?.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(book.target_date)}</p>}
                       </div>
-                      <button onClick={() => deleteBook(book.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => deleteBook(book?.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-sm text-muted-foreground">{currentVal}/{totalLimit} pages</span>
@@ -443,22 +540,22 @@ export default function Learning() {
                     )}
                     <div className="flex items-center gap-2 mt-3">
                       <Button size="sm" variant="outline" onClick={() => {
-                        const currentPages = Number(book.pages_read) || 0;
-                        updateBook(book.id, 'pages_read', Math.max(0, currentPages - 10));
+                        const currentPages = Number(book?.pages_read) || 0;
+                        updateBook(book?.id, 'pages_read', Math.max(0, currentPages - 10));
                       }} className="glass border-white/10 h-7 w-7 p-0"><Minus className="w-3 h-3" /></Button>
                       <Input
                         type="number"
-                        value={book.pages_read}
-                        onChange={e => updateBook(book.id, 'pages_read', Number(e.target.value))}
+                        value={book?.pages_read ?? 0}
+                        onChange={e => updateBook(book?.id, 'pages_read', Number(e.target.value))}
                         className="bg-white/5 border-white/10 h-7 text-center text-sm"
                       />
                       <Button size="sm" variant="outline" onClick={() => {
-                        const currentPages = Number(book.pages_read) || 0;
-                        const totalPages = Number(book.total_pages) || 0;
+                        const currentPages = Number(book?.pages_read) || 0;
+                        const totalPages = Number(book?.total_pages) || 0;
                         const newVal = currentPages + 10;
-                        updateBook(book.id, 'pages_read', newVal);
+                        updateBook(book?.id, 'pages_read', newVal);
                         if (totalPages > 0 && newVal >= totalPages) {
-                          updateBook(book.id, 'status', 'completed');
+                          updateBook(book?.id, 'status', 'completed');
                         }
                       }} className="glass border-white/10 h-7 w-7 p-0">+10</Button>
                     </div>
@@ -469,11 +566,11 @@ export default function Learning() {
               {books.filter(b => b.status === 'completed').length > 0 && (
                 <>
                   <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Finished</p>
-                  {books.filter(b => b.status === 'completed').map(book => (
-                    <div key={book.id} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
+                  {books.filter(b => b?.status === 'completed').map(book => (
+                    <div key={book?.id ?? ''} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
                       <Check className="w-5 h-5 text-sage" />
-                      <span className="text-base flex-1 line-through">{book.title}</span>
-                      <button onClick={() => deleteBook(book.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                      <span className="text-base flex-1 line-through">{book?.title ?? 'Untitled Book'}</span>
+                      <button onClick={() => deleteBook(book?.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </>
@@ -485,8 +582,8 @@ export default function Learning() {
 
       {deepWorkCourse && (
         <DeepWorkTimer
-          courseId={deepWorkCourse.id}
-          courseTitle={deepWorkCourse.title}
+          courseId={deepWorkCourse?.id ?? ''}
+          courseTitle={deepWorkCourse?.title ?? 'Untitled Course'}
           onClose={() => setDeepWorkCourse(null)}
         />
       )}

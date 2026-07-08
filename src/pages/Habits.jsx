@@ -49,23 +49,23 @@ export default function Habits() {
 
   const toggleHabit = async (habit) => {
     const today = todayStr();
-    const existing = logs.find((l) => l.habit_id === habit.id && l.date === today);
+    const existing = logs.find((l) => l?.habit_id === habit?.id && l?.date === today);
 
     if (existing) {
-      const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id).eq('user_id', user.id);
+      const { error } = await supabase.from('habit_logs').delete().eq('id', existing?.id).eq('user_id', user.id);
       if (error) throw error;
-      setLogs(logs.filter((l) => l.id !== existing.id));
-      setAllLogs(allLogs.filter((l) => l.id !== existing.id));
+      setLogs(logs.filter((l) => l?.id !== existing?.id));
+      setAllLogs(allLogs.filter((l) => l?.id !== existing?.id));
       // Decrement streak
-      const currentStreak = Number(habit.current_streak) || 0;
+      const currentStreak = Number(habit?.current_streak) || 0;
       const newStreak = Math.max(0, currentStreak - 1);
-      const { error: updateError } = await supabase.from('habits').update({ current_streak: newStreak, last_completed_date: null }).eq('id', habit.id).eq('user_id', user.id);
+      const { error: updateError } = await supabase.from('habits').update({ current_streak: newStreak, last_completed_date: null }).eq('id', habit?.id).eq('user_id', user.id);
       if (updateError) throw updateError;
-      setHabits(habits.map((h) => h.id === habit.id ? { ...h, current_streak: newStreak, last_completed_date: null } : h));
+      setHabits(habits.map((h) => h?.id === habit?.id ? { ...h, current_streak: newStreak, last_completed_date: null } : h));
     } else {
       const { data: created, error } = await supabase.from('habit_logs').insert([{
-        habit_id: habit.id,
-        habit_name: habit.name,
+        habit_id: habit?.id,
+        habit_name: habit?.name ?? 'Untitled Habit',
         date: today,
         status: 'completed',
         user_id: user.id,
@@ -74,17 +74,17 @@ export default function Habits() {
       setLogs([...logs, created]);
       setAllLogs([...allLogs, created]);
       // Increment streak
-      const currentStreak = Number(habit.current_streak) || 0;
-      const longestStreak = Number(habit.longest_streak) || 0;
+      const currentStreak = Number(habit?.current_streak) || 0;
+      const longestStreak = Number(habit?.longest_streak) || 0;
       const newStreak = currentStreak + 1;
       const newLongest = Math.max(longestStreak, newStreak);
       const { error: updateError } = await supabase.from('habits').update({
         current_streak: newStreak,
         longest_streak: newLongest,
         last_completed_date: today
-      }).eq('id', habit.id).eq('user_id', user.id);
+      }).eq('id', habit?.id).eq('user_id', user.id);
       if (updateError) throw updateError;
-      setHabits(habits.map((h) => h.id === habit.id ? { ...h, current_streak: newStreak, longest_streak: newLongest, last_completed_date: today } : h));
+      setHabits(habits.map((h) => h?.id === habit?.id ? { ...h, current_streak: newStreak, longest_streak: newLongest, last_completed_date: today } : h));
     }
   };
 
@@ -104,17 +104,17 @@ export default function Habits() {
         user_id: user.id,
       }]).select().single();
       if (error) throw error;
-      setHabits(prev => prev.map(h => h.id === tempId ? created : h));
+      setHabits(prev => prev.map(h => h?.id === tempId ? created : h));
     } catch (err) {
       toast.error('Something went wrong, please try again');
-      setHabits(prev => prev.filter(h => h.id !== tempId));
+      setHabits(prev => prev.filter(h => h?.id !== tempId));
     }
   };
 
   const deleteHabit = async (id) => {
     const { error } = await supabase.from('habits').update({ active: false }).eq('id', id).eq('user_id', user.id);
     if (error) throw error;
-    setHabits(habits.filter((h) => h.id !== id));
+    setHabits(habits.filter((h) => h?.id !== id));
   };
 
   if (loading) {
@@ -183,28 +183,28 @@ export default function Habits() {
 
       <div className="space-y-3">
           {habits.map((habit) => {
-          const isDone = logs.some((l) => l.habit_id === habit.id && l.status === 'completed');
-          const { streak, last7 } = getStreakData(allLogs, habit.id);
-          const cat = categories[habit.category] || categories.discipline;
+          const isDone = logs.some((l) => l?.habit_id === habit?.id && l?.status === 'completed');
+          const { streak, last7 } = getStreakData(allLogs, habit?.id);
+          const cat = categories[habit?.category] || categories.discipline;
 
           return (
-            <div key={habit.id} className={`glass rounded-2xl p-4 transition-all ${isDone ? 'opacity-60' : ''}`}>
+            <div key={habit?.id ?? ''} className={`glass rounded-2xl p-4 transition-all ${isDone ? 'opacity-60' : ''}`}>
                 <div className="flex items-center gap-3">
                   <button
                   onClick={() => toggleHabit(habit)}
                   className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all no-tap-highlight bg-[hsl(var(--background))] text-[hsl(var(--background))] ${
                   isDone ? 'border-transparent' : 'border-white/20'}`
                   }
-                  style={isDone ? { backgroundColor: habit.color } : {}}>
+                  style={isDone ? { backgroundColor: habit?.color ?? '#7E9D8A' } : {}}>
                   
                     {isDone && <Check className="w-4 h-4 text-background" strokeWidth={3} />}
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`font-medium text-sm ${isDone ? 'line-through text-muted-foreground' : ''}`}>{habit.name}</span>
+                      <span className={`font-medium text-sm ${isDone ? 'line-through text-muted-foreground' : ''}`}>{habit?.name ?? 'Untitled Habit'}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: cat.color + '20', color: cat.color }}>{cat.label}</span>
                     </div>
-                    {habit.description && <p className="text-xs text-muted-foreground truncate">{habit.description}</p>}
+                    {habit?.description && <p className="text-xs text-muted-foreground truncate">{habit.description}</p>}
                   </div>
                   {streak > 0 &&
                 <div className="flex items-center gap-1 text-copper">
@@ -212,7 +212,7 @@ export default function Habits() {
                       <span className="text-sm font-bold">{streak}</span>
                     </div>
                 }
-                  <button onClick={() => deleteHabit(habit.id)} className="text-muted-foreground hover:text-rose-400 transition-colors p-2" aria-label="Delete">
+                  <button onClick={() => deleteHabit(habit?.id)} className="text-muted-foreground hover:text-rose-400 transition-colors p-2" aria-label="Delete">
                      <Trash2 className="w-4 h-4" />
                    </button>
                 </div>
@@ -226,7 +226,7 @@ export default function Habits() {
                         <div
                         className="w-6 h-6 rounded-md flex items-center justify-center"
                         style={{
-                          backgroundColor: done ? habit.color : 'rgba(255,255,255,0.05)'
+                          backgroundColor: done ? habit?.color ?? '#7E9D8A' : 'rgba(255,255,255,0.05)'
                         }}>
                         
                           {done && <Check className="w-3 h-3 text-background" strokeWidth={3} />}

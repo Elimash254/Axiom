@@ -186,10 +186,114 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-white/10 border-t-white rounded-full animate-spin"></div>
-      </div>);
+      <div className="px-5 pt-12 pb-8">
+        {/* Header Skeleton */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex-1">
+            <div className="h-4 w-32 animate-pulse bg-neutral-800/60 rounded mb-2"></div>
+            <div className="h-8 w-48 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="w-11 h-11 animate-pulse bg-neutral-800/60 rounded-full"></div>
+        </div>
 
+        {/* Habits Ring Skeleton */}
+        <div className="glass-strong rounded-3xl p-6 flex items-center gap-4 mb-6 animate-pulse bg-neutral-800/60">
+          <div className="w-20 h-20 rounded-full bg-neutral-700/50"></div>
+          <div className="flex-1">
+            <div className="h-5 w-32 bg-neutral-700/50 rounded mb-2"></div>
+            <div className="h-4 w-48 bg-neutral-700/50 rounded"></div>
+          </div>
+          <div className="w-8 h-8 bg-neutral-700/50 rounded"></div>
+        </div>
+
+        {/* Learning Progress Skeleton */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 w-32 animate-pulse bg-neutral-800/60 rounded"></div>
+            <div className="h-4 w-16 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+              <div className="h-4 w-48 bg-neutral-700/50 rounded mb-2"></div>
+              <div className="h-1 w-full bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+              <div className="h-4 w-40 bg-neutral-700/50 rounded mb-2"></div>
+              <div className="h-1 w-full bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Goals Skeleton */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 w-28 animate-pulse bg-neutral-800/60 rounded"></div>
+            <div className="h-4 w-16 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+              <div className="h-4 w-40 bg-neutral-700/50 rounded mb-2"></div>
+              <div className="h-1 w-full bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+              <div className="h-4 w-36 bg-neutral-700/50 rounded mb-2"></div>
+              <div className="h-1 w-full bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Finance Skeleton */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 w-24 animate-pulse bg-neutral-800/60 rounded"></div>
+            <div className="h-4 w-16 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+              <div className="h-3 w-16 bg-neutral-700/50 rounded mb-2"></div>
+              <div className="h-6 w-24 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+              <div className="h-3 w-20 bg-neutral-700/50 rounded mb-2"></div>
+              <div className="h-6 w-20 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Events Skeleton */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="h-4 w-32 animate-pulse bg-neutral-800/60 rounded"></div>
+            <div className="h-4 w-16 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="glass rounded-xl p-3 flex items-center gap-3 animate-pulse bg-neutral-800/60">
+              <div className="w-1 h-8 bg-neutral-700/50 rounded"></div>
+              <div className="flex-1">
+                <div className="h-4 w-32 bg-neutral-700/50 rounded mb-1"></div>
+                <div className="h-3 w-20 bg-neutral-700/50 rounded"></div>
+              </div>
+            </div>
+            <div className="glass rounded-xl p-3 flex items-center gap-3 animate-pulse bg-neutral-800/60">
+              <div className="w-1 h-8 bg-neutral-700/50 rounded"></div>
+              <div className="flex-1">
+                <div className="h-4 w-28 bg-neutral-700/50 rounded mb-1"></div>
+                <div className="h-3 w-16 bg-neutral-700/50 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Weekly Review Skeleton */}
+        <div className="glass rounded-2xl p-4 flex items-center gap-3 animate-pulse bg-neutral-800/60">
+          <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+          <div className="flex-1">
+            <div className="h-4 w-24 bg-neutral-700/50 rounded mb-1"></div>
+            <div className="h-3 w-40 bg-neutral-700/50 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -277,26 +381,26 @@ export default function Dashboard() {
           </div>
           <div className="space-y-2">
             {courses.slice(0, 2).map((course) => {
-            const pct = course.total_lessons > 0 ? course.lessons_completed / course.total_lessons * 100 : 0;
+            const pct = (course?.total_lessons ?? 0) > 0 ? (course?.lessons_completed ?? 0) / (course?.total_lessons ?? 1) * 100 : 0;
             return (
-              <Link key={course.id} to="/learning" className="block glass rounded-xl p-3">
+              <Link key={course?.id ?? ''} to="/learning" className="block glass rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium truncate">{course.title}</span>
+                    <span className="text-sm font-medium truncate">{course?.title ?? 'Untitled Course'}</span>
                     <span className="text-xs text-muted-foreground">{Math.round(pct)}%</span>
                   </div>
-                  <ProgressBar value={course.lessons_completed} max={course.total_lessons} color={course.color || '#8b5cf6'} height={5} />
+                  <ProgressBar value={course?.lessons_completed ?? 0} max={course?.total_lessons ?? 0} color={course?.color ?? '#8b5cf6'} height={5} />
                 </Link>);
 
           })}
             {books.slice(0, 1).map((book) => {
-            const pct = book.total_pages > 0 ? book.pages_read / book.total_pages * 100 : 0;
+            const pct = (book?.total_pages ?? 0) > 0 ? (book?.pages_read ?? 0) / (book?.total_pages ?? 1) * 100 : 0;
             return (
-              <Link key={book.id} to="/learning" className="block glass rounded-xl p-3">
+              <Link key={book?.id ?? ''} to="/learning" className="block glass rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium truncate">📖 {book.title}</span>
+                    <span className="text-sm font-medium truncate">📖 {book?.title ?? 'Untitled Book'}</span>
                     <span className="text-xs text-muted-foreground">{Math.round(pct)}%</span>
                   </div>
-                  <ProgressBar value={book.pages_read} max={book.total_pages} color={book.color || '#8b5cf6'} height={5} />
+                  <ProgressBar value={book?.pages_read ?? 0} max={book?.total_pages ?? 0} color={book?.color ?? '#8b5cf6'} height={5} />
                 </Link>);
 
           })}
@@ -313,17 +417,17 @@ export default function Dashboard() {
           </div>
           <div className="space-y-2">
             {goals.slice(0, 3).map((goal) => {
-            const goalMilestones = milestones.filter((m) => m.goal_id === goal.id);
-            const completed = goalMilestones.filter((m) => m.completed).length;
-            const total = goalMilestones.length || goal.milestones_total || 1;
+            const goalMilestones = milestones.filter((m) => m?.goal_id === goal?.id);
+            const completed = goalMilestones.filter((m) => m?.completed).length;
+            const total = goalMilestones.length || (goal?.milestones_total ?? 1) || 1;
             const pct = completed / total * 100;
             return (
-              <Link key={goal.id} to="/goals" className="block glass rounded-xl p-3">
+              <Link key={goal?.id ?? ''} to="/goals" className="block glass rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium truncate">{goal.title}</span>
+                    <span className="text-sm font-medium truncate">{goal?.title ?? 'Untitled Goal'}</span>
                     <span className="text-xs text-muted-foreground">{Math.round(pct)}%</span>
                   </div>
-                  <ProgressBar value={completed} max={total} color={goal.color || '#3b82f6'} height={5} />
+                  <ProgressBar value={completed} max={total} color={goal?.color ?? '#3b82f6'} height={5} />
                 </Link>);
 
           })}
@@ -368,12 +472,12 @@ export default function Dashboard() {
         </div>
         {events.length > 0 ?
         <div className="space-y-2">
-            {events.sort((a, b) => (a.time || '').localeCompare(b.time || '')).map((ev) =>
-          <div key={ev.id} className="glass rounded-xl p-3 flex items-center gap-3">
-                <div className="w-1 h-8 rounded-full" style={{ backgroundColor: ev.color || '#f43f5e' }}></div>
+            {events.sort((a, b) => (a?.time ?? '').localeCompare(b?.time ?? '')).map((ev) =>
+          <div key={ev?.id ?? ''} className="glass rounded-xl p-3 flex items-center gap-3">
+                <div className="w-1 h-8 rounded-full" style={{ backgroundColor: ev?.color ?? '#f43f5e' }}></div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{ev.title}</p>
-                  {ev.time && <p className="text-xs text-muted-foreground">{ev.time}</p>}
+                  <p className="text-sm font-medium">{ev?.title ?? 'Untitled Event'}</p>
+                  {ev?.time && <p className="text-xs text-muted-foreground">{ev.time}</p>}
                 </div>
               </div>
           )}
@@ -394,7 +498,7 @@ export default function Dashboard() {
           <div className="flex-1">
             <p className="text-sm font-medium">Weekly Review</p>
             <p className="text-xs text-muted-foreground">
-              {review ? `Last reviewed: ${review.week_starting}` : 'Not done this week — take 5 min to reflect'}
+              {review ? `Last reviewed: ${review?.week_starting ?? 'Unknown'}` : 'Not done this week — take 5 min to reflect'}
             </p>
           </div>
         </div>

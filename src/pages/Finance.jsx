@@ -324,7 +324,105 @@ export default function Finance() {
   null;
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-white/10 border-t-white rounded-full animate-spin"></div></div>;
+    return (
+      <div className="px-5 pt-12 pb-8">
+        {/* Header Skeleton */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex-1">
+            <div className="h-4 w-32 animate-pulse bg-neutral-800/60 rounded mb-2"></div>
+            <div className="h-8 w-48 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="h-9 w-16 animate-pulse bg-neutral-800/60 rounded"></div>
+        </div>
+
+        {/* Net Worth Summary Skeleton */}
+        <div className="glass-strong rounded-3xl p-6 mb-4 animate-pulse bg-neutral-800/60">
+          <div className="flex items-center justify-between mb-1">
+            <div className="h-3 w-20 bg-neutral-700/50 rounded"></div>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 bg-neutral-700/50 rounded"></div>
+              <div className="h-6 w-16 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+          <div className="h-10 w-40 bg-neutral-700/50 rounded mb-4"></div>
+          <div className="flex items-center gap-4">
+            <div>
+              <div className="h-3 w-12 bg-neutral-700/50 rounded mb-1"></div>
+              <div className="h-4 w-20 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="w-px h-8 bg-neutral-700/50"></div>
+            <div>
+              <div className="h-3 w-16 bg-neutral-700/50 rounded mb-1"></div>
+              <div className="h-4 w-24 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="w-px h-8 bg-neutral-700/50"></div>
+            <div>
+              <div className="h-3 w-12 bg-neutral-700/50 rounded mb-1"></div>
+              <div className="h-4 w-16 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Monthly Cash Flow Skeleton */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-4 h-4 bg-neutral-700/50 rounded"></div>
+              <div className="h-3 w-20 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="h-6 w-24 bg-neutral-700/50 rounded"></div>
+          </div>
+          <div className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-4 h-4 bg-neutral-700/50 rounded"></div>
+              <div className="h-3 w-24 bg-neutral-700/50 rounded"></div>
+            </div>
+            <div className="h-6 w-20 bg-neutral-700/50 rounded"></div>
+          </div>
+        </div>
+
+        {/* Wealth Growth Skeleton */}
+        <div className="glass rounded-2xl p-4 mb-4 flex items-center gap-3 animate-pulse bg-neutral-800/60">
+          <div className="w-9 h-9 rounded-lg bg-neutral-700/50"></div>
+          <div className="flex-1">
+            <div className="h-3 w-32 bg-neutral-700/50 rounded mb-1"></div>
+            <div className="h-4 w-32 bg-neutral-700/50 rounded"></div>
+          </div>
+          <div className="h-3 w-24 bg-neutral-700/50 rounded"></div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="grid w-full grid-cols-4 bg-white/5 mb-4 h-10 animate-pulse bg-neutral-800/60 rounded"></div>
+
+        {/* Cash Accounts Skeleton */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-20 animate-pulse bg-neutral-800/60 rounded"></div>
+            <div className="h-7 w-12 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+              <div className="flex-1">
+                <div className="h-4 w-32 bg-neutral-700/50 rounded mb-1"></div>
+                <div className="h-3 w-20 bg-neutral-700/50 rounded"></div>
+              </div>
+              <div className="h-5 w-16 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+          <div className="glass rounded-xl p-3 animate-pulse bg-neutral-800/60">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-neutral-700/50"></div>
+              <div className="flex-1">
+                <div className="h-4 w-28 bg-neutral-700/50 rounded mb-1"></div>
+                <div className="h-3 w-16 bg-neutral-700/50 rounded"></div>
+              </div>
+              <div className="h-5 w-14 bg-neutral-700/50 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -435,12 +533,12 @@ export default function Finance() {
 
           accounts.map((acc) =>
           <AccountCard
-            key={acc.id}
+            key={acc?.id ?? ''}
             account={acc}
-            onDelete={() => deleteItem('Account', acc.id, setAccounts)}
+            onDelete={() => deleteItem('Account', acc?.id, setAccounts)}
             onTxn={(txn, updatedAccount) => {
               setTransactions(prev => [txn, ...prev]);
-              setAccounts(prev => prev.map((a) => a.id === updatedAccount.id ? updatedAccount : a));
+              setAccounts(prev => prev.map((a) => a?.id === updatedAccount?.id ? updatedAccount : a));
             }} />
 
           )
@@ -471,16 +569,16 @@ export default function Finance() {
           <EmptyState title="No transactions" subtitle="Log your income and expenses to see your cash flow patterns." /> :
 
           transactions.slice(0, 30).map((txn) =>
-          <div key={txn.id} className="glass rounded-xl p-3 flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${txn.type === 'income' ? 'bg-sage/15' : 'bg-rose-500/15'}`}>
-                  {txn.type === 'income' ? <TrendingUp className="w-4 h-4 text-sage" /> : <TrendingDown className="w-4 h-4 text-rose-400" />}
+          <div key={txn?.id ?? ''} className="glass rounded-xl p-3 flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${txn?.type === 'income' ? 'bg-sage/15' : 'bg-rose-500/15'}`}>
+                  {txn?.type === 'income' ? <TrendingUp className="w-4 h-4 text-sage" /> : <TrendingDown className="w-4 h-4 text-rose-400" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{txn.description}</p>
-                  <p className="text-xs text-muted-foreground">{txn.category} · {txn.date}</p>
+                  <p className="text-sm font-medium truncate">{txn?.description ?? 'No description'}</p>
+                  <p className="text-xs text-muted-foreground">{txn?.category ?? 'Uncategorized'} · {txn?.date ?? 'Unknown'}</p>
                 </div>
-                <p className={`font-semibold text-sm ${txn.type === 'income' ? 'text-sage' : 'text-rose-400'}`}>
-                   {txn.type === 'income' ? '+' : '-'}{formatCurrency(convertCurrency(txn.amount, 'KES', displayCurrency, exchangeRate), false, displayCurrency)}
+                <p className={`font-semibold text-sm ${txn?.type === 'income' ? 'text-sage' : 'text-rose-400'}`}>
+                   {txn?.type === 'income' ? '+' : '-'}{formatCurrency(convertCurrency(txn?.amount ?? 0, 'KES', displayCurrency, exchangeRate), false, displayCurrency)}
                  </p>
               </div>
           )
@@ -507,10 +605,10 @@ export default function Finance() {
 
           savingsGoals.map((sg) =>
           <SavingsCard
-            key={sg.id}
+            key={sg?.id ?? ''}
             goal={sg}
-            onDelete={() => deleteItem('SavingsGoal', sg.id, setSavingsGoals)}
-            onUpdate={(updated) => setSavingsGoals(prev => prev.map((s) => s.id === updated.id ? updated : s))} />
+            onDelete={() => deleteItem('SavingsGoal', sg?.id, setSavingsGoals)}
+            onUpdate={(updated) => setSavingsGoals(prev => prev.map((s) => s?.id === updated?.id ? updated : s))} />
 
           )
           }
@@ -625,15 +723,15 @@ export default function Finance() {
           {holdings.filter((h) => h.asset_type === investSubTab).length === 0 && showAdd !== 'holding' ?
           <EmptyState title={investSubTab === 'crypto' ? 'No crypto holdings' : 'No stock holdings'} subtitle={`Search for ${investSubTab === 'crypto' ? 'cryptocurrencies' : 'stocks'} to add to your portfolio. Live prices update automatically.`} /> :
 
-          holdings.filter((h) => h.asset_type === investSubTab).map((h) =>
+          holdings.filter((h) => h?.asset_type === investSubTab).map((h) =>
           <HoldingCard
-            key={h.id}
+            key={h?.id ?? ''}
             holding={h}
-            onDelete={() => deleteItem('Holding', h.id, setHoldings)}
-            onUpdate={(updated) => setHoldings((prev) => prev.map((x) => x.id === updated.id ? updated : x))}
+            onDelete={() => deleteItem('Holding', h?.id, setHoldings)}
+            onUpdate={(updated) => setHoldings((prev) => prev.map((x) => x?.id === updated?.id ? updated : x))}
             displayCurrency={displayCurrency}
             exchangeRate={exchangeRate}
-            sparkline={h.sparkline} />
+            sparkline={h?.sparkline} />
 
           )
           }

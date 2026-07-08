@@ -6,6 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import PageNotFound from '@/lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { PrivacyModeProvider } from '@/lib/PrivacyModeContext';
+import { AppProvider } from '@/lib/AppContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from '@/components/ScorllToTop';
 import Layout from '@/components/Layout';
@@ -93,11 +94,13 @@ function App() {
     <AuthProvider>
       <PrivacyModeProvider>
         <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <ScrollToTop />
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
+          <AppProvider>
+            <Router>
+              <ScrollToTop />
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+          </AppProvider>
         </QueryClientProvider>
       </PrivacyModeProvider>
     </AuthProvider>
