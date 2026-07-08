@@ -33,6 +33,7 @@ export default function Calendar() {
   const [newEvent, setNewEvent] = useState({ title: '', description: '', date: todayStr(), time: '', end_time: '', category: 'personal' });
   const [newAlarm, setNewAlarm] = useState({ title: '', time: '07:00', days: 'everyday' });
   const [newReview, setNewReview] = useState({ week_starting: todayStr(), habit_hit_rate: 0, milestones_completed: 0, finance_delta: 0, biggest_win: '', improve_next: '', reflection: '' });
+  const [editingReviewId, setEditingReviewId] = useState(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -89,15 +90,60 @@ export default function Calendar() {
   };
 
   const addReview = async () => {
-    const created = await base44.entities.WeeklyReview.create({
-      ...newReview,
-      habit_hit_rate: Number(newReview.habit_hit_rate),
-      milestones_completed: Number(newReview.milestones_completed),
-      finance_delta: Number(newReview.finance_delta),
+    try {
+      if (editingReviewId) {
+        // Update existing review
+        const updated = await base44.entities.WeeklyReview.update(editingReviewId, {
+          ...newReview,
+          habit_hit_rate: Number(newReview.habit_hit_rate),
+          milestones_completed: Number(newReview.milestones_completed),
+          finance_delta: Number(newReview.finance_delta),
+        });
+        setReviews(prev => prev.map(r => r.id === editingReviewId ? updated : r));
+        toast.success('Weekly review updated!');
+      } else {
+        // Create new review
+        const created = await base44.entities.WeeklyReview.create({
+          ...newReview,
+          habit_hit_rate: Number(newReview.habit_hit_rate),
+          milestones_completed: Number(newReview.milestones_completed),
+          finance_delta: Number(newReview.finance_delta),
+        });
+        setReviews(prev => [created, ...prev]);
+        toast.success('Weekly review saved!');
+      }
+      setNewReview({ week_starting: todayStr(), habit_hit_rate: 0, milestones_completed: 0, finance_delta: 0, biggest_win: '', improve_next: '', reflection: '' });
+      setEditingReviewId(null);
+      setShowAdd(null);
+    } catch (err) {
+      console.error('Error saving review:', err);
+      toast.error('Failed to save review');
+    }
+  };
+
+  const editReview = (review) => {
+    setNewReview({
+      week_starting: review.week_starting,
+      habit_hit_rate: review.habit_hit_rate || 0,
+      milestones_completed: review.milestones_completed || 0,
+      finance_delta: review.finance_delta || 0,
+      biggest_win: review.biggest_win || '',
+      improve_next: review.improve_next || '',
+      reflection: review.reflection || '',
     });
-    setReviews(prev => [created, ...prev]);
-    setNewReview({ week_starting: todayStr(), habit_hit_rate: 0, milestones_completed: 0, finance_delta: 0, biggest_win: '', improve_next: '', reflection: '' });
-    setShowAdd(null);
+    setEditingReviewId(review.id);
+    setShowAdd('review');
+  };
+
+  const deleteReview = async (id) => {
+    try {
+      await base44.entities.WeeklyReview.delete(id);
+      setReviews(prev => prev.filter(r => r.id !== id));
+      toast.success('Review deleted');
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      toast.error('Failed to delete review');
+    }
   };
 
   const deleteEvent = async (id) => { await base44.entities.CalendarEvent.delete(id); setEvents(prev => prev.filter(e => e.id !== id)); };
@@ -281,7 +327,7 @@ export default function Calendar() {
               <Input placeholder="Biggest win this week" value={newReview.biggest_win} onChange={e => setNewReview({ ...newReview, biggest_win: e.target.value })} className="bg-white/5 border-white/10" />
               <Input placeholder="What to improve" value={newReview.improve_next} onChange={e => setNewReview({ ...newReview, improve_next: e.target.value })} className="bg-white/5 border-white/10" />
               <Textarea placeholder="Reflection..." value={newReview.reflection} onChange={e => setNewReview({ ...newReview, reflection: e.target.value })} className="bg-white/5 border-white/10 min-h-[60px]" />
-              <Button onClick={addReview} className="w-full bg-copper hover:bg-copper/90 text-background">Save Review</Button>
+              <Button onClick={addReview} className="w-full bg-copper hover:bg-copper/90 text-background">{editingReviewId ? 'Update Review' : 'Save Review'}</Button>
             </div>
           )}
           {reviews.length === 0 ? (
@@ -289,9 +335,17 @@ export default function Calendar() {
           ) : (
             reviews.map(r => (
               <div key={r.id} className="glass rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Trophy className="w-4 h-4 text-copper" />
-                  <span className="text-sm font-semibold">Week of {formatDate(r.week_starting)}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-copper" />
+                    <span className="text-sm font-semibold">Week of {formatDate(r.week_starting)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => editReview(r)} className="text-muted-foreground hover:text-copper p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Edit">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button onClick={() => deleteReview(r.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   <div className="text-center glass rounded-lg p-2"><p className="text-xs text-muted-foreground">Habit Hit</p><p className="text-sm font-bold text-emerald-400">{r.habit_hit_rate || 0}%</p></div>

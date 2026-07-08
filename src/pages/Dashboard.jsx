@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [milestones, setMilestones] = useState([]);
   const [courses, setCourses] = useState([]);
   const [books, setBooks] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [holdings, setHoldings] = useState([]);
@@ -40,7 +41,7 @@ export default function Dashboard() {
     (async () => {
       try {
         const today = todayStr();
-        const [h, hl, g, m, c, b, a, t, ho, e, sg] = await Promise.all([
+        const [h, hl, g, m, c, b, a, t, ho, e, sg, tp] = await Promise.all([
           supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
           supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('date', today),
           supabase.from('goals').select('*').eq('user_id', user.id).eq('status', 'in_progress'),
@@ -51,7 +52,8 @@ export default function Dashboard() {
           supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(50),
           supabase.from('holdings').select('*').eq('user_id', user.id),
           supabase.from('calendar_events').select('*').eq('user_id', user.id).eq('date', today),
-          supabase.from('savings_goals').select('*').eq('user_id', user.id).eq('status', 'active')
+          supabase.from('savings_goals').select('*').eq('user_id', user.id).eq('status', 'active'),
+          supabase.from('topics').select('*').eq('user_id', user.id)
         ]);
 
         setHabits(h.data || []);
@@ -65,6 +67,7 @@ export default function Dashboard() {
         setHoldings(ho.data || []);
         setEvents(e.data || []);
         setSavingsGoals(sg.data || []);
+        setTopics(tp.data || []);
 
         // Fetch latest reviews
         try {
@@ -305,7 +308,7 @@ export default function Dashboard() {
     >
     <PullToRefresh onRefresh={async () => {
       const today = todayStr();
-      const [h, hl, g, m, c, b, a, t, ho, e, sg] = await Promise.all([
+      const [h, hl, g, m, c, b, a, t, ho, e, sg, tp] = await Promise.all([
         supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
         supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('goals').select('*').eq('user_id', user.id).eq('status', 'in_progress'),
@@ -317,10 +320,12 @@ export default function Dashboard() {
         supabase.from('holdings').select('*').eq('user_id', user.id),
         supabase.from('calendar_events').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('savings_goals').select('*').eq('user_id', user.id).eq('status', 'active'),
+        supabase.from('topics').select('*').eq('user_id', user.id)
       ]);
       setHabits(h.data || []); setHabitLogs(hl.data || []); setGoals(g.data || []); setMilestones(m.data || []);
       setCourses(c.data || []); setBooks(b.data || []); setAccounts(a.data || []); setTransactions(t.data || []);
       setHoldings(ho.data || []); setEvents(e.data || []); setSavingsGoals(sg.data || []);
+      setTopics(tp.data || []);
       const rate = await fetchUsdKesRate();
       if (rate > 1) setExchangeRate(rate);
       if (ho.data && ho.data.length > 0) fetchLivePrices(ho.data);
@@ -380,7 +385,22 @@ export default function Dashboard() {
             <Link to="/learning" className="text-xs text-sage">View all</Link>
           </div>
           <div className="space-y-2">
-            {courses.slice(0, 2).map((course) => {
+            {courses.filter(c => c.category === 'academic').slice(0, 2).map((course) => {
+              const courseTopics = topics.filter(t => t.course_id === course.id);
+              const completedTopics = courseTopics.filter(t => t.completed).length;
+              const totalTopics = courseTopics.length;
+              const pct = totalTopics > 0 ? (completedTopics / totalTopics) * 100 : 0;
+              return (
+              <Link key={course?.id ?? ''} to="/learning" className="block glass rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium truncate">{course?.title ?? 'Untitled Unit'}</span>
+                    <span className="text-xs text-muted-foreground">{Math.round(pct)}%</span>
+                  </div>
+                  <ProgressBar value={completedTopics} max={totalTopics} color={course?.color ?? '#8b5cf6'} height={5} />
+                </Link>);
+
+          })}
+            {courses.filter(c => c.category !== 'academic').slice(0, 1).map((course) => {
             const pct = (course?.total_lessons ?? 0) > 0 ? (course?.lessons_completed ?? 0) / (course?.total_lessons ?? 1) * 100 : 0;
             return (
               <Link key={course?.id ?? ''} to="/learning" className="block glass rounded-xl p-3">
@@ -475,32 +495,41 @@ export default function Dashboard() {
         </div>
       </Link>
 
-      {/* Finance At a Glance - Compact */}
+      {/* Learning Stats - Replaced Finance with more relevant progress metrics */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">At a Glance</h2>
-          <CurrencyToggle currency={displayCurrency} onToggle={setDisplayCurrency} />
+          <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Learning Stats</h2>
+          <Link to="/learning" className="text-xs text-sage">View all</Link>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Link to="/finance" className="block glass rounded-xl p-3 relative group">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground uppercase">Net Worth</p>
-              <button
-                onClick={(e) => { e.preventDefault(); togglePrivacyMode(); }}
-                className="p-1 rounded hover:bg-white/5 transition-colors"
-                aria-label={hideBalances ? "Show balances" : "Hide balances"}
-              >
-                {hideBalances ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-              </button>
+          <div className="glass rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <BookOpen className="w-4 h-4 text-sage" />
+              <p className="text-xs text-muted-foreground uppercase">Topics Done</p>
             </div>
-            <p className={`text-lg font-bold transition-all ${hideBalances ? 'blur-sm' : ''}`}>{formatCurrency(netWorth, true, displayCurrency)}</p>
-          </Link>
-          <Link to="/finance" className="block glass rounded-xl p-3">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Today's Flow</p>
-            <p className={`text-lg font-bold ${todayCashFlow >= 0 ? 'text-sage' : 'text-rose-400'}`}>
-              {formatCurrency(todayCashFlow, true, displayCurrency)}
-            </p>
-          </Link>
+            <p className="text-lg font-bold text-sage">{topics.filter(t => t.completed).length}</p>
+          </div>
+          <div className="glass rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Brain className="w-4 h-4 text-copper" />
+              <p className="text-xs text-muted-foreground uppercase">Cards Mastered</p>
+            </div>
+            <p className="text-lg font-bold text-copper">{courses.length > 0 ? Math.round((topics.filter(t => t.completed).length / Math.max(topics.length, 1)) * 100) : 0}%</p>
+          </div>
+          <div className="glass rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Target className="w-4 h-4 text-blue-400" />
+              <p className="text-xs text-muted-foreground uppercase">Goals Active</p>
+            </div>
+            <p className="text-lg font-bold text-blue-400">{goals.length}</p>
+          </div>
+          <div className="glass rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Flame className="w-4 h-4 text-orange-400" />
+              <p className="text-xs text-muted-foreground uppercase">Habit Streak</p>
+            </div>
+            <p className="text-lg font-bold text-orange-400">{habitPct === 100 ? '🔥' : `${Math.round(habitPct)}%`}</p>
+          </div>
         </div>
       </div>
       </div>

@@ -16,6 +16,7 @@ export default function FlashcardDeck({ courses }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [newCard, setNewCard] = useState({ front: '', back: '', course_id: '' });
+  const [selectedCourseId, setSelectedCourseId] = useState('all');
 
   useEffect(() => { loadCards(); }, []);
 
@@ -27,7 +28,12 @@ export default function FlashcardDeck({ courses }) {
     finally { setLoading(false); }
   };
 
-  const dueCards = cards;
+  const filteredCards = selectedCourseId === 'all' 
+    ? cards 
+    : cards.filter(c => c.course_id === selectedCourseId);
+
+  // Calculate due cards based on review logic (not mastered)
+  const dueCards = filteredCards.filter(c => !c.mastered);
 
   const addCard = async () => {
     if (!newCard.front.trim() || !newCard.back.trim()) return;
@@ -100,6 +106,27 @@ export default function FlashcardDeck({ courses }) {
 
   return (
     <div className="space-y-3">
+      {/* Course Filter */}
+      {courses.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setSelectedCourseId('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${selectedCourseId === 'all' ? 'bg-sage text-background' : 'glass text-muted-foreground'}`}
+          >
+            All Units
+          </button>
+          {courses.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCourseId(c.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${selectedCourseId === c.id ? 'bg-sage text-background' : 'glass text-muted-foreground'}`}
+            >
+              {c.title}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <div className="glass rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1">
@@ -113,7 +140,7 @@ export default function FlashcardDeck({ courses }) {
             <Layers className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground uppercase">Total</span>
           </div>
-          <p className="text-2xl font-bold">{cards.length}</p>
+          <p className="text-2xl font-bold">{filteredCards.length}</p>
         </div>
       </div>
 
@@ -147,13 +174,13 @@ export default function FlashcardDeck({ courses }) {
         </Button>
       )}
 
-      {cards.length === 0 ? (
+      {filteredCards.length === 0 ? (
         <div className="glass rounded-2xl p-6 text-center">
           <Brain className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">No flashcards yet. Create your first card to start studying!</p>
         </div>
       ) : (
-        cards.slice(0, 30).map(card => (
+        filteredCards.slice(0, 30).map(card => (
           <div key={card.id} className="glass rounded-xl p-3">
             <div className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
