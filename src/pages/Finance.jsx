@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
-import { Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Loader2 } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,7 +25,7 @@ const txnCategories = ['income', 'rent', 'food', 'transport', 'investment', 'ent
 
 export default function Finance() {
   const { user } = useAuth();
-  const { formatCurrency } = useFormatCurrency();
+  const { formatCurrency, hideBalances, togglePrivacyMode } = useFormatCurrency();
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -350,9 +350,18 @@ export default function Finance() {
         <div className="relative">
           <div className="flex items-center justify-between mb-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Net Worth</p>
-            <CurrencyToggle currency={displayCurrency} onToggle={setDisplayCurrency} />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={togglePrivacyMode}
+                className="p-1 rounded hover:bg-white/5 transition-colors"
+                aria-label={hideBalances ? "Show balances" : "Hide balances"}
+              >
+                {hideBalances ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+              </button>
+              <CurrencyToggle currency={displayCurrency} onToggle={setDisplayCurrency} />
+            </div>
           </div>
-          <span className="text-4xl font-bold tracking-tight">{formatCurrency(netWorth, false, displayCurrency)}</span>
+          <span className={`text-4xl font-bold tracking-tight transition-all ${hideBalances ? 'blur-sm' : ''}`}>{formatCurrency(netWorth, false, displayCurrency)}</span>
           <div className="flex items-center gap-4 mt-4">
             <div><p className="text-xs text-muted-foreground uppercase">Cash</p><p className="text-sm font-semibold">{formatCurrency(cashTotal, true, displayCurrency)}</p></div>
             <div className="w-px h-8 bg-white/10"></div>

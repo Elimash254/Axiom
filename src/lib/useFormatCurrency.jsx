@@ -2,7 +2,7 @@ import { usePrivacyMode } from './PrivacyModeContext';
 import { formatCurrency as baseFormatCurrency } from './format';
 
 export function useFormatCurrency() {
-  const { hideBalances } = usePrivacyMode();
+  const { hideBalances, togglePrivacyMode } = usePrivacyMode();
 
   const formatCurrency = (amount, compact = false, currency = 'KES') => {
     if (hideBalances) {
@@ -12,5 +12,5 @@ export function useFormatCurrency() {
     return baseFormatCurrency(amount, compact, currency);
   };
 
-  return { formatCurrency, hideBalances };
+  return { formatCurrency, hideBalances, togglePrivacyMode };
 }

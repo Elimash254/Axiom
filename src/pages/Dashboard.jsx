@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
-import { Flame, TrendingUp, TrendingDown, Target, BookOpen, Calendar as CalIcon, Wallet, Trophy } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Target, BookOpen, Calendar as CalIcon, Wallet, Trophy, Eye, EyeOff } from 'lucide-react';
 import ProgressRing from '@/components/ProgressRing';
 import ProgressBar from '@/components/ProgressBar';
 import PullToRefresh from '@/components/PullToRefresh';
@@ -14,7 +14,7 @@ import { fetchUsdKesRate, fetchCryptoPrices, fetchAssetPrice } from '@/lib/price
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { formatCurrency } = useFormatCurrency();
+  const { formatCurrency, hideBalances, togglePrivacyMode } = useFormatCurrency();
   const [loading, setLoading] = useState(true);
   const [habits, setHabits] = useState([]);
   const [habitLogs, setHabitLogs] = useState([]);
@@ -338,10 +338,19 @@ export default function Dashboard() {
           <CurrencyToggle currency={displayCurrency} onToggle={setDisplayCurrency} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="glass rounded-xl p-3">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Net Worth</p>
-            <p className="text-lg font-bold">{formatCurrency(netWorth, true, displayCurrency)}</p>
-          </div>
+          <Link to="/finance" className="block glass rounded-xl p-3 relative group">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground uppercase">Net Worth</p>
+              <button
+                onClick={(e) => { e.preventDefault(); togglePrivacyMode(); }}
+                className="p-1 rounded hover:bg-white/5 transition-colors"
+                aria-label={hideBalances ? "Show balances" : "Hide balances"}
+              >
+                {hideBalances ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+              </button>
+            </div>
+            <p className={`text-lg font-bold transition-all ${hideBalances ? 'blur-sm' : ''}`}>{formatCurrency(netWorth, true, displayCurrency)}</p>
+          </Link>
           <Link to="/finance" className="block glass rounded-xl p-3">
             <p className="text-xs text-muted-foreground uppercase mb-1">Today's Flow</p>
             <p className={`text-lg font-bold ${todayCashFlow >= 0 ? 'text-sage' : 'text-rose-400'}`}>
