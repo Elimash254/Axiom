@@ -81,46 +81,51 @@ export default function Goals() {
 
   const toggleMilestone = async (ms, goalId) => {
     const updated = await base44.entities.Milestone.update(ms.id, { completed: !ms.completed });
-    const newMilestones = milestones.map(m => m.id === ms.id ? { ...m, completed: !ms.completed } : m);
+    const newMilestones = milestones.map(m => String(m.id) === String(ms.id) ? { ...m, completed: !ms.completed } : m);
     setMilestones(newMilestones);
 
-    const goalMilestones = newMilestones.filter(m => m.goal_id === goalId);
+    const goalIdStr = String(goalId);
+    const goalMilestones = newMilestones.filter(m => String(m.goal_id) === goalIdStr);
     const completed = goalMilestones.filter(m => m.completed).length;
     const total = goalMilestones.length;
     const newStatus = completed === total ? 'achieved' : completed > 0 ? 'in_progress' : 'not_started';
     await base44.entities.Goal.update(goalId, { milestones_completed: completed, milestones_total: total, status: newStatus });
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones_completed: completed, milestones_total: total, status: newStatus } : g));
+    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_completed: completed, milestones_total: total, status: newStatus } : g));
   };
 
   const addMilestone = async (goalId) => {
     const title = milestoneInputs[goalId]?.trim();
     if (!title) return;
-    const created = await base44.entities.Milestone.create({ goal_id: goalId, title, completed: false, order: milestones.filter(m => m.goal_id === goalId).length });
+    const goalIdStr = String(goalId);
+    const currentOrder = milestones.filter(m => String(m.goal_id) === goalIdStr).length;
+    const created = await base44.entities.Milestone.create({ goal_id: goalIdStr, title, completed: false, order: currentOrder });
     setMilestones(prev => [...prev, created]);
 
-    const goalMilestones = milestones.filter(m => m.goal_id === goalId);
+    const goalMilestones = milestones.filter(m => String(m.goal_id) === goalIdStr);
     const newTotal = goalMilestones.length + 1;
     await base44.entities.Goal.update(goalId, { milestones_total: newTotal, status: 'in_progress' });
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones_total: newTotal, status: 'in_progress' } : g));
+    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_total: newTotal, status: 'in_progress' } : g));
     setMilestoneInputs({ ...milestoneInputs, [goalId]: '' });
   };
 
   const deleteGoal = async (id) => {
-    const goalMs = milestones.filter(m => m.goal_id === id);
+    const idStr = String(id);
+    const goalMs = milestones.filter(m => String(m.goal_id) === idStr);
     await Promise.all(goalMs.map(m => base44.entities.Milestone.delete(m.id)));
     await base44.entities.Goal.delete(id);
-    setGoals(prev => prev.filter(g => g.id !== id));
-    setMilestones(prev => prev.filter(m => m.goal_id !== id));
+    setGoals(prev => prev.filter(g => String(g.id) !== idStr));
+    setMilestones(prev => prev.filter(m => String(m.goal_id) !== idStr));
   };
 
   const deleteMilestone = async (id, goalId) => {
     await base44.entities.Milestone.delete(id);
-    const newMilestones = milestones.filter(m => m.id !== id);
+    const newMilestones = milestones.filter(m => String(m.id) !== String(id));
     setMilestones(newMilestones);
-    const goalMs = newMilestones.filter(m => m.goal_id === goalId);
+    const goalIdStr = String(goalId);
+    const goalMs = newMilestones.filter(m => String(m.goal_id) === goalIdStr);
     const completed = goalMs.filter(m => m.completed).length;
     await base44.entities.Goal.update(goalId, { milestones_completed: completed, milestones_total: goalMs.length });
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, milestones_completed: completed, milestones_total: goalMs.length } : g));
+    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_completed: completed, milestones_total: goalMs.length } : g));
   };
 
   if (loading) {
@@ -167,7 +172,7 @@ export default function Goals() {
         <div className="space-y-3">
           {goals?.map(goal => {
             const area = lifeAreas[goal.life_area] || lifeAreas.personal_growth;
-            const goalMs = milestones?.filter(m => m.goal_id === goal.id).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
+            const goalMs = milestones?.filter(m => String(m.goal_id) === String(goal.id)).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
             const completed = Number(goalMs.filter(m => m.completed).length) || 0;
             const total = Number(goalMs.length) || Number(goal.milestones_total) || 1;
             const pct = total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0;
