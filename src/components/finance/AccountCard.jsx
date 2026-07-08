@@ -24,7 +24,6 @@ export default function AccountCard({ account, onDelete, onTxn }) {
       type: txnType,
       category: isAdd ? 'income' : 'other',
       date: todayStr(),
-      account_id: account.id,
       user_id: user.id,
     }]).select().single();
     if (txnError) throw txnError;
