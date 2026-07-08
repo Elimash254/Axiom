@@ -22,7 +22,7 @@ const lifeAreas = {
 };
 
 export default function Goals() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [goals, setGoals] = useState([]);
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,23 +32,50 @@ export default function Goals() {
   const [newMilestones, setNewMilestones] = useState('');
   const [milestoneInputs, setMilestoneInputs] = useState({});
 
-  useEffect(() => { if (user) loadData(); }, [user]);
+  useEffect(() => { 
+    if (user && isAuthenticated) {
+      console.log('[Goals] Loading data for user:', user.id);
+      loadData(); 
+    } else {
+      console.log('[Goals] Skipping load - user:', !!user, 'authenticated:', isAuthenticated);
+      setLoading(false);
+    }
+  }, [user, isAuthenticated]);
+
+  // Clear data when user logs out
+  useEffect(() => {
+    if (!user || !isAuthenticated) {
+      console.log('[Goals] User logged out, clearing data');
+      setGoals([]);
+      setMilestones([]);
+      setLoading(false);
+    }
+  }, [user, isAuthenticated]);
 
   const loadData = async () => {
     try {
+      console.log('[Goals] Starting data fetch...');
       const [g, m] = await Promise.all([
         base44.entities.Goal.list(),
         base44.entities.Milestone.list(),
       ]);
-      console.log('Goals fetched:', g);
-      console.log('Milestones fetched:', m);
-      setGoals(g);
+      console.log('[Goals] Goals fetched:', g);
+      console.log('[Goals] Milestones fetched:', m);
+      setGoals(g || []);
       setMilestones(prev => {
-        if (prev.length > 0 && (!m || m.length === 0)) return prev;
+        if (prev.length > 0 && (!m || m.length === 0)) {
+          console.log('[Goals] Defending against empty milestone overwrite, keeping previous state');
+          return prev;
+        }
+        console.log('[Goals] Updating milestones with fetched data:', m);
         return m || [];
       });
-    } catch (err) { console.error('Error loading data:', err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error('[Goals] Error loading data:', err);
+      toast.error('Failed to load goals data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addGoal = async () => {
