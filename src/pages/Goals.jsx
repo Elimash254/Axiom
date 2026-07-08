@@ -165,9 +165,9 @@ export default function Goals() {
         <EmptyState title="No goals yet" subtitle="What do you want to achieve? Set your first goal and break it into milestones." action={<Button onClick={() => setShowAdd(true)} className="bg-copper hover:bg-copper/90"><Plus className="w-4 h-4 mr-1" /> Set First Goal</Button>} />
       ) : (
         <div className="space-y-3">
-          {goals.map(goal => {
+          {goals?.map(goal => {
             const area = lifeAreas[goal.life_area] || lifeAreas.personal_growth;
-            const goalMs = milestones.filter(m => m.goal_id === goal.id).sort((a, b) => (a.order || 0) - (b.order || 0));
+            const goalMs = milestones?.filter(m => m.goal_id === goal.id).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
             const completed = Number(goalMs.filter(m => m.completed).length) || 0;
             const total = Number(goalMs.length) || Number(goal.milestones_total) || 1;
             const pct = total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0;

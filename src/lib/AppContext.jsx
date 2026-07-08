@@ -31,7 +31,7 @@ export const AppProvider = ({ children }) => {
       // Fetch profile separately to prevent 404 from blocking other data
       let profileData = null;
       try {
-        const profileResult = await supabase.from('user_profiles').select('*').eq('user_id', user.id).single().maybeSingle();
+        const profileResult = await supabase.from('user_profiles').select('*').eq('user_id', user.id).maybeSingle();
         if (profileResult.data) {
           profileData = profileResult.data;
           setProfile(profileData);
@@ -144,7 +144,7 @@ export const AppProvider = ({ children }) => {
     if (!user) return;
     
     try {
-      const { data } = await supabase.from('user_profiles').select('*').eq('user_id', user.id).single().maybeSingle();
+      const { data } = await supabase.from('user_profiles').select('*').eq('user_id', user.id).maybeSingle();
       setProfile(data);
     } catch (error) {
       console.error('Error refreshing profile data:', error);
