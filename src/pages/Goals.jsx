@@ -65,17 +65,18 @@ export default function Goals() {
       const msTitles = newMilestones.split('\n').map(s => s.trim()).filter(Boolean);
       let createdMs = [];
       if (msTitles.length > 0) {
+        const goalIdStr = String(created.id);
         createdMs = await base44.entities.Milestone.bulkCreate(
-          msTitles.map((title, i) => ({ goal_id: created.id, title, order: i, completed: false }))
+          msTitles.map((title, i) => ({ goal_id: goalIdStr, title, order: i, completed: false }))
         );
         await base44.entities.Goal.update(created.id, { milestones_total: msTitles.length, status: 'in_progress' });
       }
 
-      setGoals(prev => prev.map(g => g.id === tempId ? { ...created, milestones_total: msTitles.length, status: msTitles.length > 0 ? 'in_progress' : 'not_started' } : g));
+      setGoals(prev => prev.map(g => String(g.id) === tempId ? { ...created, milestones_total: msTitles.length, status: msTitles.length > 0 ? 'in_progress' : 'not_started' } : g));
       setMilestones(prev => [...prev, ...createdMs]);
     } catch (err) {
       toast.error('Something went wrong, please try again');
-      setGoals(prev => prev.filter(g => g.id !== tempId));
+      setGoals(prev => prev.filter(g => String(g.id) !== tempId));
     }
   };
 
@@ -101,8 +102,8 @@ export default function Goals() {
     const created = await base44.entities.Milestone.create({ goal_id: goalIdStr, title, completed: false, order: currentOrder });
     setMilestones(prev => [...prev, created]);
 
-    const goalMilestones = milestones.filter(m => String(m.goal_id) === goalIdStr);
-    const newTotal = goalMilestones.length + 1;
+    // Calculate new total after adding the milestone
+    const newTotal = currentOrder + 1;
     await base44.entities.Goal.update(goalId, { milestones_total: newTotal, status: 'in_progress' });
     setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_total: newTotal, status: 'in_progress' } : g));
     setMilestoneInputs({ ...milestoneInputs, [goalId]: '' });
@@ -173,8 +174,8 @@ export default function Goals() {
           {goals?.map(goal => {
             const area = lifeAreas[goal.life_area] || lifeAreas.personal_growth;
             const goalMs = milestones?.filter(m => String(m.goal_id) === String(goal.id)).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
-            const completed = Number(goalMs.filter(m => m.completed).length) || 0;
-            const total = Number(goalMs.length) || Number(goal.milestones_total) || 1;
+            const completed = goalMs.filter(m => m.completed).length || 0;
+            const total = goalMs.length || Number(goal.milestones_total) || 0;
             const pct = total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0;
             const isExpanded = expandedGoal === goal.id;
             const isAchieved = goal.status === 'achieved';
