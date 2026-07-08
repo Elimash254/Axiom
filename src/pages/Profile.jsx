@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { useFormatCurrency } from '@/lib/useFormatCurrency';
 import { Camera, Save, Flame, Target, BookOpen, Wallet, X, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import Cropper from 'react-easy-crop';
@@ -10,6 +11,7 @@ import { getCroppedImg } from '@/lib/cropImage';
 
 export default function Profile() {
   const { user, checkUserAuth, updateUser } = useAuth();
+  const { formatCurrency: formatCurrencyPrivate } = useFormatCurrency();
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -285,7 +287,7 @@ export default function Profile() {
               value={(stats?.books.length || 0) + (stats?.courses.length || 0)}
               color="#7E9D8A"
             />
-            <StatTile icon={Wallet} label="Net Worth" value={formatCurrency(netWorth, true)} color="#C47D57" />
+            <StatTile icon={Wallet} label="Net Worth" value={formatCurrencyPrivate(netWorth, true)} color="#C47D57" />
           </div>
         )}
       </div>

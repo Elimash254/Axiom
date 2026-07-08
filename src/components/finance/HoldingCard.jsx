@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { formatCurrency, formatPercent, convertCurrency } from '@/lib/format';
+import { useFormatCurrency } from '@/lib/useFormatCurrency';
+import { formatPercent, convertCurrency } from '@/lib/format';
 import getAssetIcon from '@/components/finance/getAssetIcon';
 import Sparkline from '@/components/finance/Sparkline';
 import EditAssetModal from '@/components/finance/EditAssetModal';
 
 export default function HoldingCard({ holding, onDelete, onUpdate, displayCurrency = 'KES', exchangeRate = 1, sparkline }) {
+  const { formatCurrency } = useFormatCurrency();
   const [modalOpen, setModalOpen] = useState(false);
 
   const h = holding;

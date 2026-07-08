@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Flame, TrendingUp, TrendingDown, Target, BookOpen, Calendar as CalIcon, Wallet, Trophy } from 'lucide-react';
 import ProgressRing from '@/components/ProgressRing';
 import ProgressBar from '@/components/ProgressBar';
 import PullToRefresh from '@/components/PullToRefresh';
-import { formatCurrency, formatPercent, todayStr, getGreeting, convertCurrency } from '@/lib/format';
+import { useFormatCurrency } from '@/lib/useFormatCurrency';
+import { formatPercent, todayStr, getGreeting, convertCurrency } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
 import CurrencyToggle from '@/components/finance/CurrencyToggle';
 import { fetchUsdKesRate, fetchCryptoPrices, fetchAssetPrice } from '@/lib/priceService';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { formatCurrency } = useFormatCurrency();
   const [loading, setLoading] = useState(true);
   const [habits, setHabits] = useState([]);
   const [habitLogs, setHabitLogs] = useState([]);
@@ -39,40 +41,40 @@ export default function Dashboard() {
       try {
         const today = todayStr();
         const [h, hl, g, m, c, b, a, t, ho, e, sg] = await Promise.all([
-        base44.entities.Habit.filter({ active: true }),
-        base44.entities.HabitLog.filter({ date: today }),
-        base44.entities.Goal.filter({ status: 'in_progress' }),
-        base44.entities.Milestone.list(),
-        base44.entities.Course.filter({ status: 'active' }),
-        base44.entities.Book.filter({ status: 'reading' }),
-        base44.entities.Account.list(),
-        base44.entities.Transaction.list('-date', 50),
-        base44.entities.Holding.list(),
-        base44.entities.CalendarEvent.filter({ date: today }),
-        base44.entities.SavingsGoal.filter({ status: 'active' })]
-        );
+          supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
+          supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('date', today),
+          supabase.from('goals').select('*').eq('user_id', user.id).eq('status', 'in_progress'),
+          supabase.from('milestones').select('*').eq('user_id', user.id),
+          supabase.from('courses').select('*').eq('user_id', user.id).eq('status', 'active'),
+          supabase.from('books').select('*').eq('user_id', user.id).eq('status', 'reading'),
+          supabase.from('accounts').select('*').eq('user_id', user.id),
+          supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(50),
+          supabase.from('holdings').select('*').eq('user_id', user.id),
+          supabase.from('calendar_events').select('*').eq('user_id', user.id).eq('date', today),
+          supabase.from('savings_goals').select('*').eq('user_id', user.id).eq('status', 'active')
+        ]);
 
-        setHabits(h);
-        setHabitLogs(hl);
-        setGoals(g);
-        setMilestones(m);
-        setCourses(c);
-        setBooks(b);
-        setAccounts(a);
-        setTransactions(t);
-        setHoldings(ho);
-        setEvents(e);
-        setSavingsGoals(sg);
+        setHabits(h.data || []);
+        setHabitLogs(hl.data || []);
+        setGoals(g.data || []);
+        setMilestones(m.data || []);
+        setCourses(c.data || []);
+        setBooks(b.data || []);
+        setAccounts(a.data || []);
+        setTransactions(t.data || []);
+        setHoldings(ho.data || []);
+        setEvents(e.data || []);
+        setSavingsGoals(sg.data || []);
 
         // Fetch latest reviews
         try {
-          const reviews = await base44.entities.WeeklyReview.list('-week_starting', 1);
-          setReview(reviews[0] || null);
+          const { data: reviews } = await supabase.from('weekly_reviews').select('*').eq('user_id', user.id).order('week_starting', { ascending: false }).limit(1);
+          setReview(reviews?.[0] || null);
         } catch {}
 
         // Fetch live prices for holdings
-        if (ho.length > 0) {
-          fetchLivePrices(ho);
+        if (ho.data && ho.data.length > 0) {
+          fetchLivePrices(ho.data);
         }
         // Fetch exchange rate
         const rate = await fetchUsdKesRate();
@@ -84,81 +86,38 @@ export default function Dashboard() {
       }
     })();
 
-    // Set up real-time subscriptions for all dashboard entities
-    const unsubscribers = [];
-    
-    const handleRealtimeUpdate = (payload) => {
-      console.log('[Dashboard] Real-time update received:', payload);
-      // Refresh data on any change
-      const refreshData = async () => {
-        try {
-          console.log('[Dashboard] Refreshing data after realtime update...');
+    // Set up Supabase real-time subscriptions for financial data
+    const channels = [
+      supabase.channel('accounts-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts', filter: `user_id=eq.${user.id}` }, () => {
+          supabase.from('accounts').select('*').eq('user_id', user.id).then(({ data }) => setAccounts(data || []));
+        })
+        .subscribe(),
+      supabase.channel('transactions-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, () => {
           const today = todayStr();
-          const [h, hl, g, m, c, b, a, t, ho, e, sg] = await Promise.all([
-            base44.entities.Habit.filter({ active: true }),
-            base44.entities.HabitLog.filter({ date: today }),
-            base44.entities.Goal.filter({ status: 'in_progress' }),
-            base44.entities.Milestone.list(),
-            base44.entities.Course.filter({ status: 'active' }),
-            base44.entities.Book.filter({ status: 'reading' }),
-            base44.entities.Account.list(),
-            base44.entities.Transaction.list('-date', 50),
-            base44.entities.Holding.list(),
-            base44.entities.CalendarEvent.filter({ date: today }),
-            base44.entities.SavingsGoal.filter({ status: 'active' })
-          ]);
-
-          setHabits(h);
-          setHabitLogs(hl);
-          setGoals(g);
-          setMilestones(m);
-          setCourses(c);
-          setBooks(b);
-          setAccounts(a);
-          setTransactions(t);
-          setHoldings(ho);
-          setEvents(e);
-          setSavingsGoals(sg);
-
-          // Fetch latest reviews
-          try {
-            const reviews = await base44.entities.WeeklyReview.list('-week_starting', 1);
-            setReview(reviews[0] || null);
-          } catch {}
-
-          if (ho.length > 0) {
-            fetchLivePrices(ho);
-          }
-          
-          console.log('[Dashboard] Data refresh complete');
-        } catch (err) {
-          console.error('[Dashboard] Error refreshing data:', err);
-        }
-      };
-
-      refreshData();
-    };
-
-    // Subscribe to all relevant entities
-    const entitiesToSubscribe = [
-      'Habit', 'HabitLog', 'Goal', 'Milestone', 'Course', 'Book',
-      'Account', 'Transaction', 'Holding', 'CalendarEvent', 'SavingsGoal', 'WeeklyReview'
+          supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(50).then(({ data }) => setTransactions(data || []));
+        })
+        .subscribe(),
+      supabase.channel('holdings-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'holdings', filter: `user_id=eq.${user.id}` }, () => {
+          supabase.from('holdings').select('*').eq('user_id', user.id).then(({ data }) => {
+            setHoldings(data || []);
+            if (data && data.length > 0) fetchLivePrices(data);
+          });
+        })
+        .subscribe(),
+      supabase.channel('savings_goals-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'savings_goals', filter: `user_id=eq.${user.id}` }, () => {
+          supabase.from('savings_goals').select('*').eq('user_id', user.id).then(({ data }) => setSavingsGoals(data || []));
+        })
+        .subscribe(),
     ];
 
-    console.log('[Dashboard] Setting up realtime subscriptions for:', entitiesToSubscribe);
-    
-    entitiesToSubscribe.forEach(entityName => {
-      const unsubscribe = base44.entities[entityName].subscribe(handleRealtimeUpdate);
-      unsubscribers.push(unsubscribe);
-    });
-
-    console.log('[Dashboard] Realtime subscriptions set up successfully');
-
     return () => {
-      console.log('[Dashboard] Cleaning up realtime subscriptions');
-      unsubscribers.forEach(unsubscribe => unsubscribe());
+      channels.forEach(channel => supabase.removeChannel(channel));
     };
-  }, []);
+  }, [user.id]);
 
   const fetchLivePrices = async (holdingsData) => {
     const cryptoSyms = holdingsData.filter((h) => h.asset_type === 'crypto').map((h) => h.symbol);
@@ -180,7 +139,7 @@ export default function Dashboard() {
           h.current_price = price;
           h.last_updated = new Date().toISOString();
           if (logo) h.logo_url = logo;
-          try {await base44.entities.Holding.update(h.id, { current_price: h.current_price, last_updated: h.last_updated, logo_url: h.logo_url });} catch {}
+          try {await supabase.from('holdings').update({ current_price: h.current_price, last_updated: h.last_updated, logo_url: h.logo_url }).eq('id', h.id).eq('user_id', user.id);} catch {}
         }
       } catch {}
     }
@@ -243,24 +202,24 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={async () => {
       const today = todayStr();
       const [h, hl, g, m, c, b, a, t, ho, e, sg] = await Promise.all([
-        base44.entities.Habit.filter({ active: true }),
-        base44.entities.HabitLog.filter({ date: today }),
-        base44.entities.Goal.filter({ status: 'in_progress' }),
-        base44.entities.Milestone.list(),
-        base44.entities.Course.filter({ status: 'active' }),
-        base44.entities.Book.filter({ status: 'reading' }),
-        base44.entities.Account.list(),
-        base44.entities.Transaction.list('-date', 50),
-        base44.entities.Holding.list(),
-        base44.entities.CalendarEvent.filter({ date: today }),
-        base44.entities.SavingsGoal.filter({ status: 'active' }),
+        supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
+        supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('date', today),
+        supabase.from('goals').select('*').eq('user_id', user.id).eq('status', 'in_progress'),
+        supabase.from('milestones').select('*').eq('user_id', user.id),
+        supabase.from('courses').select('*').eq('user_id', user.id).eq('status', 'active'),
+        supabase.from('books').select('*').eq('user_id', user.id).eq('status', 'reading'),
+        supabase.from('accounts').select('*').eq('user_id', user.id),
+        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(50),
+        supabase.from('holdings').select('*').eq('user_id', user.id),
+        supabase.from('calendar_events').select('*').eq('user_id', user.id).eq('date', today),
+        supabase.from('savings_goals').select('*').eq('user_id', user.id).eq('status', 'active'),
       ]);
-      setHabits(h); setHabitLogs(hl); setGoals(g); setMilestones(m);
-      setCourses(c); setBooks(b); setAccounts(a); setTransactions(t);
-      setHoldings(ho); setEvents(e); setSavingsGoals(sg);
+      setHabits(h.data || []); setHabitLogs(hl.data || []); setGoals(g.data || []); setMilestones(m.data || []);
+      setCourses(c.data || []); setBooks(b.data || []); setAccounts(a.data || []); setTransactions(t.data || []);
+      setHoldings(ho.data || []); setEvents(e.data || []); setSavingsGoals(sg.data || []);
       const rate = await fetchUsdKesRate();
       if (rate > 1) setExchangeRate(rate);
-      if (ho.length > 0) fetchLivePrices(ho);
+      if (ho.data && ho.data.length > 0) fetchLivePrices(ho.data);
     }}>
     <div className="px-5 pt-12 pb-8">
       {/* Header */}
@@ -282,56 +241,20 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Net Worth */}
-      <div className="glass-strong rounded-3xl p-6 mb-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-copper/5 rounded-full blur-3xl"></div>
-        <div className="relative">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Net Worth</p>
-            <CurrencyToggle currency={displayCurrency} onToggle={setDisplayCurrency} />
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-bold tracking-tight">{formatCurrency(netWorth, true, displayCurrency)}</span>
-          </div>
-          <div className="flex items-center gap-4 mt-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase">Cash</p>
-              <p className="text-sm font-semibold">{formatCurrency(cashTotal, true, displayCurrency)}</p>
-            </div>
-            <div className="w-px h-8 bg-white/10"></div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase">Savings</p>
-              <p className="text-sm font-semibold">{formatCurrency(savingsTotal, true, displayCurrency)}</p>
-            </div>
-            <div className="w-px h-8 bg-white/10"></div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase">Portfolio</p>
-              <p className="text-sm font-semibold flex items-center gap-1">
-                {formatCurrency(portfolioValue, true, displayCurrency)}
-                {portfolioChange !== 0 &&
-                <span className={`text-center lowercase text-[11px] pr-4 ${portfolioChange >= 0 ? 'text-sage' : 'text-rose-400'}`}>
-                    {formatPercent(portfolioChange)}
-                  </span>
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Habits Ring */}
+      {/* Habits Ring - Hero Section */}
       <Link to="/habits" className="block mb-6">
-        <div className={`glass rounded-2xl p-5 flex items-center gap-4 transition-all ${habitPct === 100 ? 'ring-2 ring-copper/50 bg-copper/5' : ''}`}>
-          <ProgressRing progress={habitPct} color={habitPct === 100 ? '#C47D57' : '#7E9D8A'} size={72}>
+        <div className={`glass-strong rounded-3xl p-6 flex items-center gap-4 transition-all ${habitPct === 100 ? 'ring-2 ring-copper/50 bg-copper/5' : ''} relative overflow-hidden`}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-sage/5 rounded-full blur-3xl"></div>
+          <ProgressRing progress={habitPct} color={habitPct === 100 ? '#C47D57' : '#7E9D8A'} size={80}>
             <div className="text-center">
-              <span className="text-lg font-bold">{completedToday}</span>
+              <span className="text-xl font-bold">{completedToday}</span>
               <span className="text-xs text-muted-foreground">/{habits.length}</span>
             </div>
           </ProgressRing>
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <div className="flex items-center gap-2 mb-1">
-              <Flame className={`w-4 h-4 ${habitPct === 100 ? 'text-copper' : 'text-copper'}`} />
-              <h3 className="font-semibold">Today's Habits</h3>
+              <Flame className={`w-5 h-5 ${habitPct === 100 ? 'text-copper' : 'text-sage'}`} />
+              <h3 className="text-lg font-semibold">Today's Habits</h3>
             </div>
             <p className="text-sm text-muted-foreground">
               {habits.length === 0 ? 'Set up your first habit' :
@@ -339,74 +262,17 @@ export default function Dashboard() {
               `${habits.length - completedToday} remaining`}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-2xl">{habitPct === 100 ? '🏆' : '🔥'}</p>
+          <div className="text-right relative">
+            <p className="text-3xl">{habitPct === 100 ? '🏆' : '🔥'}</p>
           </div>
         </div>
       </Link>
 
-      {/* Two-column row: Cash Flow + Goals */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <Link to="/finance" className="block">
-          <div className="glass rounded-2xl p-4 h-full">
-            <div className="flex items-center gap-2 mb-2">
-              <Wallet className="w-4 h-4 text-copper" />
-              <span className="text-xs text-muted-foreground uppercase font-medium">Today's Flow</span>
-            </div>
-            <div className={`text-xl font-bold ${todayCashFlow >= 0 ? 'text-sage' : 'text-rose-400'}`}>
-              {formatCurrency(todayCashFlow, true, displayCurrency)}
-            </div>
-            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-              {todayCashFlow >= 0 ? <TrendingUp className="w-3 h-3 text-sage" /> : <TrendingDown className="w-3 h-3 text-rose-400" />}
-              <span>{todayTxns.length} transactions</span>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/goals" className="block">
-          <div className="glass rounded-2xl p-4 h-full">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-4 h-4 text-copper" />
-              <span className="text-xs text-muted-foreground uppercase font-medium">Active Goals</span>
-            </div>
-            <div className="text-xl font-bold text-copper">{goals.length}</div>
-            <div className="text-xs text-muted-foreground mt-1">in progress</div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Top Goals */}
-      {goals.length > 0 &&
-      <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Top Goals</h2>
-            <Link to="/goals" className="text-xs text-copper">View all</Link>
-          </div>
-          <div className="space-y-2">
-            {goals.slice(0, 3).map((goal) => {
-            const goalMilestones = milestones.filter((m) => m.goal_id === goal.id);
-            const completed = goalMilestones.filter((m) => m.completed).length;
-            const total = goalMilestones.length || goal.milestones_total || 1;
-            const pct = completed / total * 100;
-            return (
-              <Link key={goal.id} to="/goals" className="block glass rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium truncate">{goal.title}</span>
-                    <span className="text-xs text-muted-foreground">{Math.round(pct)}%</span>
-                  </div>
-                  <ProgressBar value={completed} max={total} color={goal.color || '#3b82f6'} height={5} />
-                </Link>);
-
-          })}
-          </div>
-        </div>
-      }
-
-      {/* Learning Progress */}
+      {/* Learning Progress - Hero Section */}
       {(courses.length > 0 || books.length > 0) &&
       <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Learning</h2>
+            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Learning Progress</h2>
             <Link to="/learning" className="text-xs text-sage">View all</Link>
           </div>
           <div className="space-y-2">
@@ -437,6 +303,53 @@ export default function Dashboard() {
           </div>
         </div>
       }
+
+      {/* Top Goals */}
+      {goals.length > 0 &&
+      <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Active Goals</h2>
+            <Link to="/goals" className="text-xs text-copper">View all</Link>
+          </div>
+          <div className="space-y-2">
+            {goals.slice(0, 3).map((goal) => {
+            const goalMilestones = milestones.filter((m) => m.goal_id === goal.id);
+            const completed = goalMilestones.filter((m) => m.completed).length;
+            const total = goalMilestones.length || goal.milestones_total || 1;
+            const pct = completed / total * 100;
+            return (
+              <Link key={goal.id} to="/goals" className="block glass rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium truncate">{goal.title}</span>
+                    <span className="text-xs text-muted-foreground">{Math.round(pct)}%</span>
+                  </div>
+                  <ProgressBar value={completed} max={total} color={goal.color || '#3b82f6'} height={5} />
+                </Link>);
+
+          })}
+          </div>
+        </div>
+      }
+
+      {/* Finance At a Glance - Compact */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">At a Glance</h2>
+          <CurrencyToggle currency={displayCurrency} onToggle={setDisplayCurrency} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="glass rounded-xl p-3">
+            <p className="text-xs text-muted-foreground uppercase mb-1">Net Worth</p>
+            <p className="text-lg font-bold">{formatCurrency(netWorth, true, displayCurrency)}</p>
+          </div>
+          <Link to="/finance" className="block glass rounded-xl p-3">
+            <p className="text-xs text-muted-foreground uppercase mb-1">Today's Flow</p>
+            <p className={`text-lg font-bold ${todayCashFlow >= 0 ? 'text-sage' : 'text-rose-400'}`}>
+              {formatCurrency(todayCashFlow, true, displayCurrency)}
+            </p>
+          </Link>
+        </div>
+      </div>
 
       {/* Today's Events */}
       <div className="mb-6">

@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { useFormatCurrency } from '@/lib/useFormatCurrency';
 import { Wallet, Trash2, Plus, Minus, X } from 'lucide-react';
-import { formatCurrency, todayStr } from '@/lib/format';
+import { todayStr } from '@/lib/format';
+import ProgressBar from '@/components/ProgressBar';
 
 export default function AccountCard({ account, onDelete, onTxn }) {
   const { user } = useAuth();
+  const { formatCurrency } = useFormatCurrency();
   const [showForm, setShowForm] = useState(null);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');

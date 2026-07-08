@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { useFormatCurrency } from '@/lib/useFormatCurrency';
 import { PiggyBank, Trash2, Plus, Minus, X } from 'lucide-react';
-import { formatCurrency } from '@/lib/format';
 import ProgressBar from '@/components/ProgressBar';
 
 export default function SavingsCard({ goal, onDelete, onUpdate }) {
   const { user } = useAuth();
+  const { formatCurrency } = useFormatCurrency();
   const [showForm, setShowForm] = useState(null);
   const [amount, setAmount] = useState('');
 

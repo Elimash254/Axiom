@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ModuleHeader from '@/components/ModuleHeader';
 import EmptyState from '@/components/EmptyState';
-import { formatCurrency, formatPercent, todayStr, convertCurrency } from '@/lib/format';
+import { useFormatCurrency } from '@/lib/useFormatCurrency';
+import { formatPercent, todayStr, convertCurrency } from '@/lib/format';
 import AccountCard from '@/components/finance/AccountCard';
 import SavingsCard from '@/components/finance/SavingsCard';
 import HoldingCard from '@/components/finance/HoldingCard';
@@ -24,6 +25,7 @@ const txnCategories = ['income', 'rent', 'food', 'transport', 'investment', 'ent
 
 export default function Finance() {
   const { user } = useAuth();
+  const { formatCurrency } = useFormatCurrency();
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);

@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'r
 import { AnimatePresence } from 'framer-motion';
 import PageNotFound from '@/lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { PrivacyModeProvider } from '@/lib/PrivacyModeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from '@/components/ScorllToTop';
 import Layout from '@/components/Layout';
@@ -90,13 +91,15 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <PrivacyModeProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </PrivacyModeProvider>
     </AuthProvider>
   )
 }
