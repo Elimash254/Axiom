@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Shuffle, Check, X } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function MixModeView({ courses, onExit }) {
+  const { user } = useAuth();
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -11,8 +13,8 @@ export default function MixModeView({ courses, onExit }) {
     try {
       const all = [];
       for (const course of courses) {
-        const t = await base44.entities.Topic.filter({ course_id: course.id });
-        t.filter(topic => !topic.completed).forEach(topic => {
+        const { data: t } = await supabase.from('topics').select('*').eq('course_id', course.id).eq('user_id', user.id);
+        (t || []).filter(topic => !topic.completed).forEach(topic => {
           all.push({ ...topic, courseTitle: course.title });
         });
       }
@@ -22,10 +24,10 @@ export default function MixModeView({ courses, onExit }) {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadTopics(); }, []);
+  useEffect(() => { loadTopics(); }, [courses, user.id]);
 
   const completeTopic = async (topic) => {
-    await base44.entities.Topic.update(topic.id, { completed: true });
+    await supabase.from('topics').update({ completed: true }).eq('id', topic.id).eq('user_id', user.id);
     setTopics(prev => prev.filter(t => t.id !== topic.id));
   };
 
@@ -37,8 +39,8 @@ export default function MixModeView({ courses, onExit }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Mix Mode</h3>
-          <p className="text-xs text-muted-foreground">Interleaved topics across courses</p>
+          <h3 className="text-base font-semibold">Mix Mode</h3>
+          <p className="text-sm text-muted-foreground">Interleaved topics across courses</p>
         </div>
         <div className="flex gap-2">
           <button onClick={loadTopics} className="w-9 h-9 rounded-xl glass flex items-center justify-center">
@@ -57,10 +59,10 @@ export default function MixModeView({ courses, onExit }) {
       ) : (
         topics.map((topic, i) => (
           <div key={topic.id} className="glass rounded-2xl p-4 flex items-center gap-3">
-            <span className="text-xs font-bold text-muted-foreground w-6">{i + 1}</span>
+            <span className="text-sm font-bold text-muted-foreground w-6">{i + 1}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{topic.title}</p>
-              <span className="text-[10px] text-sage bg-sage/10 px-1.5 py-0.5 rounded-full">{topic.courseTitle}</span>
+              <p className="text-base font-medium truncate">{topic.title}</p>
+              <span className="text-xs text-sage bg-sage/10 px-1.5 py-0.5 rounded-full">{topic.courseTitle}</span>
             </div>
             <button
               onClick={() => completeTopic(topic)}

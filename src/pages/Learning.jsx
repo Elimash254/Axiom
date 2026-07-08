@@ -222,10 +222,10 @@ export default function Learning() {
 
       <Tabs defaultValue="academic" className="w-full">
         <TabsList className="grid w-full grid-cols-4 bg-white/5 mb-4 h-10">
-          <TabsTrigger value="academic" className="text-xs"><FlaskConical className="w-3 h-3 mr-1" /> Academic</TabsTrigger>
-          <TabsTrigger value="personal" className="text-xs"><Lightbulb className="w-3 h-3 mr-1" /> Personal</TabsTrigger>
-          <TabsTrigger value="flashcards" className="text-xs"><Brain className="w-3 h-3 mr-1" /> Cards</TabsTrigger>
-          <TabsTrigger value="books" className="text-xs"><BookOpen className="w-3 h-3 mr-1" /> Books</TabsTrigger>
+          <TabsTrigger value="academic" className="text-sm"><FlaskConical className="w-3 h-3 mr-1" /> Academic</TabsTrigger>
+          <TabsTrigger value="personal" className="text-sm"><Lightbulb className="w-3 h-3 mr-1" /> Personal</TabsTrigger>
+          <TabsTrigger value="flashcards" className="text-sm"><Brain className="w-3 h-3 mr-1" /> Cards</TabsTrigger>
+          <TabsTrigger value="books" className="text-sm"><BookOpen className="w-3 h-3 mr-1" /> Books</TabsTrigger>
         </TabsList>
 
         {/* Academic Units */}
@@ -252,7 +252,7 @@ export default function Learning() {
               ) : (
                 <>
                   {academicCourses.filter(c => c.status === 'active').length > 0 && (
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Active Units</p>
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Active Units</p>
                   )}
                   {academicCourses.filter(c => c.status === 'active').map(course => (
                     <div key={course.id} className="glass rounded-2xl p-4">
@@ -261,8 +261,8 @@ export default function Learning() {
                           <FlaskConical className="w-5 h-5 text-sage" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm">{course.title}</h3>
-                          {course.target_date && <p className="text-xs text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
+                          <h3 className="font-semibold text-base">{course.title}</h3>
+                          {course.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
                         </div>
                         <button onClick={() => setExpandedUnit(expandedUnit === course.id ? null : course.id)} className="text-muted-foreground hover:text-foreground p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={expandedUnit === course.id ? "Collapse" : "Expand"}>
                           {expandedUnit === course.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -280,11 +280,11 @@ export default function Learning() {
 
                   {academicCourses.filter(c => c.status === 'completed').length > 0 && (
                     <>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-4">Completed</p>
+                      <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Completed</p>
                       {academicCourses.filter(c => c.status === 'completed').map(course => (
                         <div key={course.id} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
                           <Check className="w-5 h-5 text-sage" />
-                          <span className="text-sm flex-1 line-through">{course.title}</span>
+                          <span className="text-base flex-1 line-through">{course.title}</span>
                           <button onClick={() => deleteCourse(course.id)} className="!text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       ))}
@@ -299,8 +299,8 @@ export default function Learning() {
         {/* Personal Development */}
         <TabsContent value="personal" className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Courses</h3>
-            <Button size="sm" variant="ghost" onClick={() => setShowAdd(showAdd === 'course' ? null : 'course')} className="text-sage text-xs"><Plus className="w-3 h-3" /> Add</Button>
+            <h3 className="text-base font-semibold text-muted-foreground uppercase">Courses</h3>
+            <Button size="sm" variant="ghost" onClick={() => setShowAdd(showAdd === 'course' ? null : 'course')} className="text-sage text-sm"><Plus className="w-3 h-3" /> Add</Button>
           </div>
           {showAdd === 'course' && (
             <div className="glass-strong rounded-2xl p-4 space-y-2">
@@ -317,7 +317,7 @@ export default function Learning() {
           ) : (
             <>
               {personalCourses.filter(c => c.status === 'active').length > 0 && (
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Active</p>
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Active</p>
               )}
               {personalCourses.filter(c => c.status === 'active').map(course => {
                 const currentVal = Number(course.lessons_completed) || 0;
@@ -331,15 +331,15 @@ export default function Learning() {
                         <Lightbulb className="w-5 h-5 text-sage" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm">{course.title}</h3>
-                        {course.platform && <p className="text-xs text-muted-foreground">{course.platform}</p>}
-                        {course.target_date && <p className="text-xs text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
+                        <h3 className="font-semibold text-base">{course.title}</h3>
+                        {course.platform && <p className="text-sm text-muted-foreground">{course.platform}</p>}
+                        {course.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(course.target_date)}</p>}
                       </div>
                       <button onClick={() => deleteCourse(course.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground">{currentVal}/{totalLimit} lessons</span>
-                      <span className="text-xs font-semibold text-sage">{progressPercentage}%</span>
+                      <span className="text-sm text-muted-foreground">{currentVal}/{totalLimit} lessons</span>
+                      <span className="text-sm font-semibold text-sage">{progressPercentage}%</span>
                     </div>
                     <ProgressBar value={currentVal} max={totalLimit} color="#7E9D8A" height={6} />
                     <div className="flex items-center gap-2 mt-3">
@@ -372,11 +372,11 @@ export default function Learning() {
 
               {personalCourses.filter(c => c.status === 'completed').length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-4">Completed</p>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Completed</p>
                   {personalCourses.filter(c => c.status === 'completed').map(course => (
                     <div key={course.id} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
                       <Check className="w-5 h-5 text-sage" />
-                      <span className="text-sm flex-1 line-through">{course.title}</span>
+                      <span className="text-base flex-1 line-through">{course.title}</span>
                       <button onClick={() => deleteCourse(course.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
@@ -394,7 +394,7 @@ export default function Learning() {
         {/* Books */}
         <TabsContent value="books" className="space-y-3">
           <div className="flex items-center justify-between">
-            <Button size="sm" variant="ghost" onClick={() => setShowAdd(showAdd === 'book' ? null : 'book')} className="text-sage text-xs"><Plus className="w-3 h-3" /> Add Book</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowAdd(showAdd === 'book' ? null : 'book')} className="text-sage text-sm"><Plus className="w-3 h-3" /> Add Book</Button>
           </div>
           {showAdd === 'book' && (
             <div className="glass-strong rounded-2xl p-4 space-y-2">
@@ -411,7 +411,7 @@ export default function Learning() {
           ) : (
             <>
               {books.filter(b => b.status === 'reading').length > 0 && (
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Reading</p>
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Reading</p>
               )}
               {books.filter(b => b.status === 'reading').map(book => {
                 const currentVal = Number(book.pages_read) || 0;
@@ -424,15 +424,15 @@ export default function Learning() {
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl bg-sage/15 flex items-center justify-center flex-shrink-0 text-lg">📖</div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm">{book.title}</h3>
-                        {book.author && <p className="text-xs text-muted-foreground">{book.author}</p>}
-                        {book.target_date && <p className="text-xs text-muted-foreground">Target: {formatDate(book.target_date)}</p>}
+                        <h3 className="font-semibold text-base">{book.title}</h3>
+                        {book.author && <p className="text-sm text-muted-foreground">{book.author}</p>}
+                        {book.target_date && <p className="text-sm text-muted-foreground">Target: {formatDate(book.target_date)}</p>}
                       </div>
                       <button onClick={() => deleteBook(book.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground">{currentVal}/{totalLimit} pages</span>
-                      <span className="text-xs font-semibold text-sage">{progressPercentage}%</span>
+                      <span className="text-sm text-muted-foreground">{currentVal}/{totalLimit} pages</span>
+                      <span className="text-sm font-semibold text-sage">{progressPercentage}%</span>
                     </div>
                     <ProgressBar value={currentVal} max={totalLimit} color="#7E9D8A" height={6} />
                     {totalLimit > 0 && remaining > 0 && (
@@ -468,11 +468,11 @@ export default function Learning() {
 
               {books.filter(b => b.status === 'completed').length > 0 && (
                 <>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-4">Finished</p>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">Finished</p>
                   {books.filter(b => b.status === 'completed').map(book => (
                     <div key={book.id} className="glass rounded-2xl p-3 flex items-center gap-3 opacity-60">
                       <Check className="w-5 h-5 text-sage" />
-                      <span className="text-sm flex-1 line-through">{book.title}</span>
+                      <span className="text-base flex-1 line-through">{book.title}</span>
                       <button onClick={() => deleteBook(book.id)} className="text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}

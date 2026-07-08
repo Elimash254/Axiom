@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Plus, Trash2, ChevronDown, ChevronRight, Check, Circle, Calendar as CalIcon, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,10 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/format';
 import ScheduleDialog from '@/components/learning/ScheduleDialog';
 import StudyJournalModal from '@/components/learning/StudyJournalModal';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function TopicList({ courseId, courseTitle }) {
+  const { user } = useAuth();
   const [topics, setTopics] = useState([]);
   const [expanded, setExpanded] = useState(null);
   const [showAdd, setShowAdd] = useState(null);
@@ -21,27 +23,30 @@ export default function TopicList({ courseId, courseTitle }) {
 
   const loadTopics = async () => {
     try {
-      const t = await base44.entities.Topic.filter({ course_id: courseId });
-      setTopics(t);
+      const { data: t } = await supabase.from('topics').select('*').eq('course_id', courseId).eq('user_id', user.id);
+      setTopics(t || []);
     } catch (e) { console.error(e); }
   };
 
   const addTopic = async (parentId = null) => {
     if (!newTopic.trim()) return;
-    const created = await base44.entities.Topic.create({
+    const { data: created, error } = await supabase.from('topics').insert([{
       course_id: courseId,
       title: newTopic,
       parent_id: parentId,
       completed: false,
       order: topics.filter(t => (t.parent_id || null) === parentId).length,
-    });
+      user_id: user.id,
+    }]).select().single();
+    if (error) throw error;
     setTopics(prev => [...prev, created]);
     setNewTopic('');
     setShowAdd(null);
   };
 
   const toggleTopic = async (topic) => {
-    const updated = await base44.entities.Topic.update(topic.id, { completed: !topic.completed });
+    const { data: updated, error } = await supabase.from('topics').update({ completed: !topic.completed }).eq('id', topic.id).eq('user_id', user.id).select().single();
+    if (error) throw error;
     setTopics(prev => prev.map(t => t.id === topic.id ? updated : t));
     if (!topic.completed) {
       setJournalTopic(updated);
@@ -49,7 +54,7 @@ export default function TopicList({ courseId, courseTitle }) {
   };
 
   const deleteTopic = async (id) => {
-    await base44.entities.Topic.delete(id);
+    await supabase.from('topics').delete().eq('id', id).eq('user_id', user.id);
     setTopics(prev => prev.filter(t => t.id !== id && t.parent_id !== id));
   };
 
@@ -102,8 +107,8 @@ export default function TopicList({ courseId, courseTitle }) {
       {topics.length > 0 && (
         <>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">{completedCount}/{topics.length} topics</span>
-            <span className="text-xs font-semibold text-violet-400">{Math.round(pct)}%</span>
+            <span className="text-sm text-muted-foreground">{completedCount}/{topics.length} topics</span>
+            <span className="text-sm font-semibold text-violet-400">{Math.round(pct)}%</span>
           </div>
           <ProgressBar value={completedCount} max={topics.length} color="#8b5cf6" height={4} />
         </>
@@ -114,7 +119,7 @@ export default function TopicList({ courseId, courseTitle }) {
         const isExpanded = expanded === topic.id;
         return (
           <div key={topic.id}>
-            <div className="flex items-center gap-2 py-1.5">
+            <div className="flex items-center gap-2 py-2">
               {subtopics.length > 0 ? (
                 <button onClick={() => setExpanded(isExpanded ? null : topic.id)} className="text-muted-foreground p-2" aria-label={isExpanded ? "Collapse" : "Expand"}>
                   {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -124,19 +129,19 @@ export default function TopicList({ courseId, courseTitle }) {
               )}
               <button onClick={() => toggleTopic(topic)} className="flex items-center gap-2 flex-1 text-left min-w-0">
                 {topic.completed ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0" />}
-                <span className={`text-sm truncate ${topic.completed ? 'line-through text-muted-foreground' : ''}`}>{topic.title}</span>
+                <span className={`text-base font-medium truncate ${topic.completed ? 'line-through text-muted-foreground' : ''}`}>{topic.title}</span>
                 {renderScheduleBadge(topic)}
               </button>
               {renderActions(topic)}
             </div>
 
             {isExpanded && subtopics.length > 0 && (
-              <div className="ml-6 space-y-0.5">
+              <div className="ml-6 space-y-1">
                 {subtopics.map(sub => (
-                  <div key={sub.id} className="flex items-center gap-2 py-1 group">
+                  <div key={sub.id} className="flex items-center gap-2 py-2 group">
                     <button onClick={() => toggleTopic(sub)} className="flex items-center gap-2 flex-1 text-left min-w-0">
                       {sub.completed ? <Check className="w-3 h-3 text-emerald-400 shrink-0" /> : <Circle className="w-3 h-3 text-muted-foreground shrink-0" />}
-                      <span className={`text-xs truncate ${sub.completed ? 'line-through text-muted-foreground' : ''}`}>{sub.title}</span>
+                      <span className={`text-sm font-medium truncate ${sub.completed ? 'line-through text-muted-foreground' : ''}`}>{sub.title}</span>
                       {renderScheduleBadge(sub)}
                     </button>
                     {renderActions(sub, true)}
@@ -147,8 +152,8 @@ export default function TopicList({ courseId, courseTitle }) {
 
             {showAdd === topic.id && (
               <div className="flex gap-1 ml-6 mt-1">
-                <Input placeholder="Subtopic" value={newTopic} onChange={e => setNewTopic(e.target.value)} className="bg-white/5 border-white/10 h-7 text-xs" onKeyDown={e => e.key === 'Enter' && addTopic(topic.id)} autoFocus />
-                <Button size="sm" onClick={() => addTopic(topic.id)} className="h-7 px-2 bg-violet-500 hover:bg-violet-600">Add</Button>
+                <Input placeholder="Subtopic" value={newTopic} onChange={e => setNewTopic(e.target.value)} className="bg-white/5 border-white/10 h-8 text-sm" onKeyDown={e => e.key === 'Enter' && addTopic(topic.id)} autoFocus />
+                <Button size="sm" onClick={() => addTopic(topic.id)} className="h-8 px-3 bg-violet-500 hover:bg-violet-600">Add</Button>
               </div>
             )}
           </div>
@@ -157,11 +162,11 @@ export default function TopicList({ courseId, courseTitle }) {
 
       {showAdd === 'main' ? (
         <div className="flex gap-1 mt-1">
-          <Input placeholder="Topic name" value={newTopic} onChange={e => setNewTopic(e.target.value)} className="bg-white/5 border-white/10 h-7 text-xs" onKeyDown={e => e.key === 'Enter' && addTopic(null)} autoFocus />
-          <Button size="sm" onClick={() => addTopic(null)} className="h-7 px-2 bg-violet-500 hover:bg-violet-600">Add</Button>
+          <Input placeholder="Topic name" value={newTopic} onChange={e => setNewTopic(e.target.value)} className="bg-white/5 border-white/10 h-8 text-sm" onKeyDown={e => e.key === 'Enter' && addTopic(null)} autoFocus />
+          <Button size="sm" onClick={() => addTopic(null)} className="h-8 px-3 bg-violet-500 hover:bg-violet-600">Add</Button>
         </div>
       ) : (
-        <button onClick={() => { setShowAdd('main'); setNewTopic(''); }} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-violet-400 mt-1">
+        <button onClick={() => { setShowAdd('main'); setNewTopic(''); }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-violet-400 mt-1">
           <Plus className="w-3 h-3" /> Add topic
         </button>
       )}
