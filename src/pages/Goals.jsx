@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { Plus, Trash2, Target, Check, ChevronDown, ChevronRight } from 'lucide-react';
@@ -21,6 +22,7 @@ const lifeAreas = {
 };
 
 export default function Goals() {
+  const { user } = useAuth();
   const [goals, setGoals] = useState([]);
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ export default function Goals() {
   const [newMilestones, setNewMilestones] = useState('');
   const [milestoneInputs, setMilestoneInputs] = useState({});
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (user) loadData(); }, [user]);
 
   const loadData = async () => {
     try {
@@ -39,7 +41,11 @@ export default function Goals() {
         base44.entities.Milestone.list(),
       ]);
       setGoals(g);
-      setMilestones(m);
+      setMilestones(prev => {
+        // Defend against empty overwrites - keep existing data if new data is empty
+        if (prev.length > 0 && (!m || m.length === 0)) return prev;
+        return m || [];
+      });
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
