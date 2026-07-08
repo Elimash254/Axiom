@@ -1,20 +1,26 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { BookOpen, Save } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function StudyJournalModal({ topic, onClose }) {
+  const { user } = useAuth();
   const [entry, setEntry] = useState(topic.study_journal || '');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     setSaving(true);
     try {
-      await base44.entities.Topic.update(topic.id, { study_journal: entry });
+      const { error } = await supabase.from('topics').update({ study_journal: entry }).eq('id', topic.id).eq('user_id', user.id);
+      if (error) throw error;
       onClose();
-    } catch (e) { console.error(e); }
-    finally { setSaving(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
