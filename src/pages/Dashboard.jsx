@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
-import { Flame, TrendingUp, TrendingDown, Target, BookOpen, Calendar as CalIcon, Wallet, Trophy, Eye, EyeOff } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Target, BookOpen, Calendar as CalIcon, Wallet, Trophy, Eye, EyeOff, Brain } from 'lucide-react';
 import ProgressRing from '@/components/ProgressRing';
 import ProgressBar from '@/components/ProgressBar';
 import PullToRefresh from '@/components/PullToRefresh';
