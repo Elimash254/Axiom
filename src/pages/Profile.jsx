@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useFormatCurrency } from '@/lib/useFormatCurrency';
 import { Camera, Save, Flame, Target, BookOpen, Wallet, X, Check } from 'lucide-react';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, convertCurrency } from '@/lib/format';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '@/lib/cropImage';
 
@@ -39,15 +39,17 @@ export default function Profile() {
   useEffect(() => {
     (async () => {
       try {
-        const [habits, goals, courses, books, accounts, habitLogs] = await Promise.all([
+        const [habits, goals, courses, books, accounts, habitLogs, holdings, savingsGoals] = await Promise.all([
           supabase.from('habits').select('*').eq('user_id', user.id),
           supabase.from('goals').select('*').eq('user_id', user.id),
           supabase.from('courses').select('*').eq('user_id', user.id),
           supabase.from('books').select('*').eq('user_id', user.id),
           supabase.from('accounts').select('*').eq('user_id', user.id),
           supabase.from('habit_logs').select('*').eq('user_id', user.id),
+          supabase.from('holdings').select('*').eq('user_id', user.id),
+          supabase.from('savings_goals').select('*').eq('user_id', user.id),
         ]);
-        setStats({ habits: habits.data || [], goals: goals.data || [], courses: courses.data || [], books: books.data || [], accounts: accounts.data || [], habitLogs: habitLogs.data || [] });
+        setStats({ habits: habits.data || [], goals: goals.data || [], courses: courses.data || [], books: books.data || [], accounts: accounts.data || [], habitLogs: habitLogs.data || [], holdings: holdings.data || [], savingsGoals: savingsGoals.data || [] });
       } catch (err) {
         console.error(err);
       } finally {
@@ -124,7 +126,24 @@ export default function Profile() {
     }
   };
 
-  const netWorth = stats ? stats.accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0) : 0;
+  const exchangeRate = parseFloat(localStorage.getItem('usd_kes_rate')) || 130;
+  const displayCurrency = 'KES';
+  
+  const cashTotalRaw = stats ? stats.accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0) : 0;
+  const cashTotal = convertCurrency(cashTotalRaw, 'KES', displayCurrency, exchangeRate);
+  
+  const portfolioValue = stats?.holdings ? stats.holdings.reduce((s, h) => {
+    const hc = h?.currency || 'USD';
+    const quantity = Number(h?.quantity) || 0;
+    const currentPrice = Number(h?.current_price) || Number(h?.buy_price) || 0;
+    const raw = quantity * currentPrice;
+    return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
+  }, 0) : 0;
+  
+  const savingsTotalRaw = stats?.savingsGoals ? stats.savingsGoals.reduce((s, g) => s + (Number(g?.current_amount) || 0), 0) : 0;
+  const savingsTotal = convertCurrency(savingsTotalRaw, 'KES', displayCurrency, exchangeRate);
+  
+  const netWorth = cashTotal + portfolioValue + savingsTotal;
   const goalsAchieved = stats ? stats.goals.filter((g) => g.status === 'achieved').length : 0;
   const habitsCompleted = stats ? stats.habitLogs.filter((l) => l.status === 'completed').length : 0;
   const initial = (displayName || user?.full_name || 'U').charAt(0).toUpperCase();

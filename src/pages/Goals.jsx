@@ -209,11 +209,14 @@ export default function Goals() {
                 {isExpanded && (
                   <div className="mt-4 space-y-2 pl-1">
                     {goalMs.map(ms => (
-                      <div key={ms.id} className="flex items-center gap-2 group">
-                        <button onClick={() => toggleMilestone(ms, goal.id)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${ms.completed ? 'border-transparent' : 'border-white/20'}`} style={ms.completed ? { backgroundColor: area.color } : {}}>
-                          {ms.completed && <Check className="w-3 h-3 text-background" strokeWidth={3} />}
-                        </button>
-                        <span className={`text-sm flex-1 ${ms.completed ? 'line-through text-muted-foreground' : ''}`}>{ms.title}</span>
+                      <div key={ms.id} className="flex items-center gap-3 py-2">
+                        <input 
+                          type="checkbox" 
+                          checked={ms.completed} 
+                          onChange={() => toggleMilestone(ms, goal.id)} 
+                          className="w-5 h-5 rounded border-neutral-700 bg-neutral-800 accent-[#C47D57]" 
+                        />
+                        <span className={`text-base font-medium flex-1 ${ms.completed ? 'line-through text-neutral-500' : 'text-neutral-200'}`}>{ms.title}</span>
                         <button onClick={() => deleteMilestone(ms.id, goal.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-rose-400 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Delete"><Trash2 className="w-3 h-3" /></button>
                       </div>
                     ))}
