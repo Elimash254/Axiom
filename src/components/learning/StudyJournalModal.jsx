@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
 
-export default function StudyJournalModal({ topic, onClose }) {
+export default function StudyJournalModal({ topic, onClose, onUpdate }) {
   const { user } = useAuth();
   const [entry, setEntry] = useState(topic.study_journal || '');
   const [saving, setSaving] = useState(false);
@@ -15,6 +15,7 @@ export default function StudyJournalModal({ topic, onClose }) {
     try {
       const { error } = await supabase.from('topics').update({ study_journal: entry }).eq('id', topic.id).eq('user_id', user.id);
       if (error) throw error;
+      onUpdate(topic.id, entry);
       onClose();
     } catch (e) {
       console.error(e);

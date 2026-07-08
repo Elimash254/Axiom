@@ -58,6 +58,10 @@ export default function TopicList({ courseId, courseTitle }) {
     setTopics(prev => prev.filter(t => t.id !== id && t.parent_id !== id));
   };
 
+  const updateTopicJournal = (topicId, journalText) => {
+    setTopics(prev => prev.map(t => t.id === topicId ? { ...t, study_journal: journalText } : t));
+  };
+
   const mainTopics = topics.filter(t => !t.parent_id).sort((a, b) => (a.order || 0) - (b.order || 0));
   const completedCount = topics.filter(t => t.completed).length;
   const pct = topics.length > 0 ? (completedCount / topics.length) * 100 : 0;
@@ -127,23 +131,37 @@ export default function TopicList({ courseId, courseTitle }) {
               ) : (
                 <div className="w-4" />
               )}
-              <button onClick={() => toggleTopic(topic)} className="flex items-center gap-2 flex-1 text-left min-w-0">
-                {topic.completed ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0" />}
-                <span className={`text-base font-medium truncate ${topic.completed ? 'line-through text-muted-foreground' : ''}`}>{topic.title}</span>
-                {renderScheduleBadge(topic)}
-              </button>
+              <div className="flex-1 min-w-0">
+                <button onClick={() => toggleTopic(topic)} className="flex items-center gap-2 flex-1 text-left min-w-0">
+                  {topic.completed ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0" />}
+                  <span className={`text-base font-medium truncate ${topic.completed ? 'line-through text-muted-foreground' : ''}`}>{topic.title}</span>
+                  {renderScheduleBadge(topic)}
+                </button>
+                {topic.study_journal && (
+                  <div className="mt-2 ml-6 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700/40 text-sm italic text-neutral-300 pl-4 border-l-2 border-l-emerald-500">
+                    "{topic.study_journal}"
+                  </div>
+                )}
+              </div>
               {renderActions(topic)}
             </div>
 
             {isExpanded && subtopics.length > 0 && (
               <div className="ml-6 space-y-1">
                 {subtopics.map(sub => (
-                  <div key={sub.id} className="flex items-center gap-2 py-2 group">
-                    <button onClick={() => toggleTopic(sub)} className="flex items-center gap-2 flex-1 text-left min-w-0">
-                      {sub.completed ? <Check className="w-3 h-3 text-emerald-400 shrink-0" /> : <Circle className="w-3 h-3 text-muted-foreground shrink-0" />}
-                      <span className={`text-sm font-medium truncate ${sub.completed ? 'line-through text-muted-foreground' : ''}`}>{sub.title}</span>
-                      {renderScheduleBadge(sub)}
-                    </button>
+                  <div key={sub.id} className="flex items-start gap-2 py-2 group">
+                    <div className="flex-1 min-w-0">
+                      <button onClick={() => toggleTopic(sub)} className="flex items-center gap-2 flex-1 text-left min-w-0">
+                        {sub.completed ? <Check className="w-3 h-3 text-emerald-400 shrink-0" /> : <Circle className="w-3 h-3 text-muted-foreground shrink-0" />}
+                        <span className={`text-sm font-medium truncate ${sub.completed ? 'line-through text-muted-foreground' : ''}`}>{sub.title}</span>
+                        {renderScheduleBadge(sub)}
+                      </button>
+                      {sub.study_journal && (
+                        <div className="mt-2 ml-5 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700/40 text-sm italic text-neutral-300 pl-4 border-l-2 border-l-emerald-500">
+                          "{sub.study_journal}"
+                        </div>
+                      )}
+                    </div>
                     {renderActions(sub, true)}
                   </div>
                 ))}
@@ -191,6 +209,7 @@ export default function TopicList({ courseId, courseTitle }) {
             <StudyJournalModal
               topic={journalTopic}
               onClose={() => setJournalTopic(null)}
+              onUpdate={updateTopicJournal}
             />
           )}
         </DialogContent>
