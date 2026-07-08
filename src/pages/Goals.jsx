@@ -40,13 +40,14 @@ export default function Goals() {
         base44.entities.Goal.list(),
         base44.entities.Milestone.list(),
       ]);
+      console.log('Goals fetched:', g);
+      console.log('Milestones fetched:', m);
       setGoals(g);
       setMilestones(prev => {
-        // Defend against empty overwrites - keep existing data if new data is empty
         if (prev.length > 0 && (!m || m.length === 0)) return prev;
         return m || [];
       });
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error('Error loading data:', err); }
     finally { setLoading(false); }
   };
 
@@ -180,6 +181,7 @@ export default function Goals() {
           {goals?.map(goal => {
             const area = lifeAreas[goal.life_area] || lifeAreas.personal_growth;
             const goalMs = milestones?.filter(m => String(m.goal_id) === String(goal.id)).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
+            console.log(`Goal ${goal.id} (${goal.title}):`, { goalId: goal.id, goalIdType: typeof goal.id, milestones: milestones, filteredMilestones: goalMs });
             const completed = goalMs.filter(m => m.completed).length || 0;
             const total = goalMs.length || Number(goal.milestones_total) || 0;
             const pct = total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0;
