@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { Plus, Trash2, Target, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import PullToRefresh from '@/components/PullToRefresh';
 import toast from 'react-hot-toast';
@@ -55,16 +56,61 @@ export default function Goals() {
   const loadData = async () => {
     try {
       console.log('[Goals] Starting data fetch...');
-      const [g, m] = await Promise.all([
-        base44.entities.Goal.list(),
-        base44.entities.Milestone.list(),
-      ]);
-      console.log('[Goals] Goals fetched:', g?.length || 0, 'items');
-      console.log('[Goals] Milestones fetched:', m?.length || 0, 'items');
-      console.log('[Goals] Goals data:', g);
-      console.log('[Goals] Milestones data:', m);
-      setGoals(g || []);
-      setMilestones(m || []);
+      
+      // Fetch goals with explicit column selection
+      const { data: goalsData, error: goalsError } = await supabase
+        .from('goals')
+        .select('id, user_id, title, why, life_area, target_date, color, status, milestones_total, milestones_completed, created_at')
+        .eq('user_id', user.id);
+      
+      if (goalsError) {
+        console.error('[Goals] Error fetching goals:', goalsError);
+        throw goalsError;
+      }
+      
+      // Fetch milestones with explicit column selection
+      const { data: milestonesData, error: milestonesError } = await supabase
+        .from('milestones')
+        .select('id, user_id, goal_id, title, completed, order, created_at')
+        .eq('user_id', user.id);
+      
+      if (milestonesError) {
+        console.error('[Goals] Error fetching milestones:', milestonesError);
+        throw milestonesError;
+      }
+      
+      console.log('[Goals] Goals fetched:', goalsData?.length || 0, 'items');
+      console.log('[Goals] Milestones fetched:', milestonesData?.length || 0, 'items');
+      console.log('[Goals] Goals data:', goalsData);
+      console.log('[Goals] Milestones data:', milestonesData);
+      
+      // Convert snake_case to camelCase for compatibility with existing code
+      const camelGoals = goalsData?.map(g => ({
+        id: g.id,
+        userId: g.user_id,
+        title: g.title,
+        why: g.why,
+        lifeArea: g.life_area,
+        targetDate: g.target_date,
+        color: g.color,
+        status: g.status,
+        milestonesTotal: g.milestones_total,
+        milestonesCompleted: g.milestones_completed,
+        createdAt: g.created_at
+      })) || [];
+      
+      const camelMilestones = milestonesData?.map(m => ({
+        id: m.id,
+        userId: m.user_id,
+        goalId: m.goal_id,
+        title: m.title,
+        completed: m.completed,
+        order: m.order,
+        createdAt: m.created_at
+      })) || [];
+      
+      setGoals(camelGoals);
+      setMilestones(camelMilestones);
     } catch (err) {
       console.error('[Goals] Error loading data:', err);
       toast.error('Failed to load goals data');
@@ -77,89 +123,221 @@ export default function Goals() {
     if (!newGoal.title.trim()) return;
     const area = lifeAreas[newGoal.life_area];
     const tempId = 'temp-' + Date.now();
-    const tempGoal = { ...newGoal, id: tempId, color: area.color, status: 'not_started', milestones_total: 0 };
+    const tempGoal = { ...newGoal, id: tempId, color: area.color, status: 'not_started', milestonesTotal: 0 };
     setGoals(prev => [tempGoal, ...prev]);
     setNewGoal({ title: '', why: '', life_area: 'personal_growth', target_date: '' });
     setNewMilestones('');
     setShowAdd(false);
     try {
-      const created = await base44.entities.Goal.create({
-        ...newGoal,
-        target_date: newGoal.target_date || undefined,
-        color: area.color,
-        status: 'not_started',
-      });
+      const { data: created, error: createError } = await supabase
+        .from('goals')
+        .insert({
+          user_id: user.id,
+          title: newGoal.title,
+          why: newGoal.why,
+          life_area: newGoal.life_area,
+          target_date: newGoal.target_date || null,
+          color: area.color,
+          status: 'not_started',
+          milestones_total: 0,
+          milestones_completed: 0,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
 
       // Create milestones
       const msTitles = newMilestones.split('\n').map(s => s.trim()).filter(Boolean);
       let createdMs = [];
       if (msTitles.length > 0) {
-        const goalIdStr = String(created.id);
-        console.log('[Goals] Bulk creating milestones for goal:', goalIdStr, msTitles);
-        createdMs = await base44.entities.Milestone.bulkCreate(
-          msTitles.map((title, i) => ({ goal_id: goalIdStr, title, order: i, completed: false }))
-        );
+        console.log('[Goals] Bulk creating milestones for goal:', created.id, msTitles);
+        const { data: milestoneData, error: milestoneError } = await supabase
+          .from('milestones')
+          .insert(
+            msTitles.map((title, i) => ({
+              user_id: user.id,
+              goal_id: created.id,
+              title,
+              order: i,
+              completed: false,
+            }))
+          )
+          .select();
+
+        if (milestoneError) throw milestoneError;
+
+        createdMs = milestoneData.map(m => ({
+          id: m.id,
+          userId: m.user_id,
+          goalId: m.goal_id,
+          title: m.title,
+          completed: m.completed,
+          order: m.order,
+          createdAt: m.created_at
+        }));
+
         console.log('[Goals] Bulk milestones created successfully:', createdMs);
-        await base44.entities.Goal.update(created.id, { milestones_total: msTitles.length, status: 'in_progress' });
+
+        // Update goal with milestone count
+        const { error: updateError } = await supabase
+          .from('goals')
+          .update({ milestones_total: msTitles.length, status: 'in_progress' })
+          .eq('id', created.id);
+
+        if (updateError) throw updateError;
       }
 
-      setGoals(prev => prev.map(g => String(g.id) === tempId ? { ...created, milestones_total: msTitles.length, status: msTitles.length > 0 ? 'in_progress' : 'not_started' } : g));
+      const camelGoal = {
+        id: created.id,
+        userId: created.user_id,
+        title: created.title,
+        why: created.why,
+        lifeArea: created.life_area,
+        targetDate: created.target_date,
+        color: created.color,
+        status: created.status,
+        milestonesTotal: msTitles.length,
+        milestonesCompleted: 0,
+        createdAt: created.created_at
+      };
+
+      setGoals(prev => prev.map(g => String(g.id) === tempId ? { ...camelGoal, milestonesTotal: msTitles.length, status: msTitles.length > 0 ? 'in_progress' : 'not_started' } : g));
       setMilestones(prev => [...prev, ...createdMs]);
     } catch (err) {
+      console.error('[Goals] Error creating goal:', err);
       toast.error('Something went wrong, please try again');
       setGoals(prev => prev.filter(g => String(g.id) !== tempId));
     }
   };
 
   const toggleMilestone = async (ms, goalId) => {
-    const updated = await base44.entities.Milestone.update(ms.id, { completed: !ms.completed });
+    const { error: updateError } = await supabase
+      .from('milestones')
+      .update({ completed: !ms.completed })
+      .eq('id', ms.id)
+      .eq('user_id', user.id);
+
+    if (updateError) throw updateError;
+
     const newMilestones = milestones.map(m => String(m.id) === String(ms.id) ? { ...m, completed: !ms.completed } : m);
     setMilestones(newMilestones);
 
     const goalIdStr = String(goalId);
-    const goalMilestones = newMilestones.filter(m => String(m.goal_id) === goalIdStr);
+    const goalMilestones = newMilestones.filter(m => String(m.goalId) === goalIdStr);
     const completed = goalMilestones.filter(m => m.completed).length;
     const total = goalMilestones.length;
     const newStatus = completed === total ? 'achieved' : completed > 0 ? 'in_progress' : 'not_started';
-    await base44.entities.Goal.update(goalId, { milestones_completed: completed, milestones_total: total, status: newStatus });
-    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_completed: completed, milestones_total: total, status: newStatus } : g));
+
+    const { error: goalUpdateError } = await supabase
+      .from('goals')
+      .update({ milestones_completed: completed, milestones_total: total, status: newStatus })
+      .eq('id', goalId)
+      .eq('user_id', user.id);
+
+    if (goalUpdateError) throw goalUpdateError;
+
+    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestonesCompleted: completed, milestonesTotal: total, status: newStatus } : g));
   };
 
   const addMilestone = async (goalId) => {
     const title = milestoneInputs[goalId]?.trim();
     if (!title) return;
     const goalIdStr = String(goalId);
-    const currentOrder = milestones.filter(m => String(m.goal_id) === goalIdStr).length;
+    const currentOrder = milestones.filter(m => String(m.goalId) === goalIdStr).length;
     console.log('[Goals] Creating milestone:', { goalId: goalIdStr, title, order: currentOrder });
-    const created = await base44.entities.Milestone.create({ goal_id: goalIdStr, title, completed: false, order: currentOrder });
-    console.log('[Goals] Milestone created successfully:', created);
-    setMilestones(prev => [...prev, created]);
+
+    const { data: created, error: createError } = await supabase
+      .from('milestones')
+      .insert({
+        user_id: user.id,
+        goal_id: goalIdStr,
+        title,
+        completed: false,
+        order: currentOrder,
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+
+    const camelMilestone = {
+      id: created.id,
+      userId: created.user_id,
+      goalId: created.goal_id,
+      title: created.title,
+      completed: created.completed,
+      order: created.order,
+      createdAt: created.created_at
+    };
+
+    console.log('[Goals] Milestone created successfully:', camelMilestone);
+    setMilestones(prev => [...prev, camelMilestone]);
 
     // Calculate new total after adding the milestone
     const newTotal = currentOrder + 1;
-    await base44.entities.Goal.update(goalId, { milestones_total: newTotal, status: 'in_progress' });
-    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_total: newTotal, status: 'in_progress' } : g));
+    const { error: goalUpdateError } = await supabase
+      .from('goals')
+      .update({ milestones_total: newTotal, status: 'in_progress' })
+      .eq('id', goalId)
+      .eq('user_id', user.id);
+
+    if (goalUpdateError) throw goalUpdateError;
+
+    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestonesTotal: newTotal, status: 'in_progress' } : g));
     setMilestoneInputs({ ...milestoneInputs, [goalId]: '' });
   };
 
   const deleteGoal = async (id) => {
     const idStr = String(id);
-    const goalMs = milestones.filter(m => String(m.goal_id) === idStr);
-    await Promise.all(goalMs.map(m => base44.entities.Milestone.delete(m.id)));
-    await base44.entities.Goal.delete(id);
+    const goalMs = milestones.filter(m => String(m.goalId) === idStr);
+    
+    // Delete all milestones for this goal
+    await Promise.all(goalMs.map(m => 
+      supabase
+        .from('milestones')
+        .delete()
+        .eq('id', m.id)
+        .eq('user_id', user.id)
+    ));
+    
+    // Delete the goal
+    const { error: deleteError } = await supabase
+      .from('goals')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (deleteError) throw deleteError;
+
     setGoals(prev => prev.filter(g => String(g.id) !== idStr));
-    setMilestones(prev => prev.filter(m => String(m.goal_id) !== idStr));
+    setMilestones(prev => prev.filter(m => String(m.goalId) !== idStr));
   };
 
   const deleteMilestone = async (id, goalId) => {
-    await base44.entities.Milestone.delete(id);
+    const { error: deleteError } = await supabase
+      .from('milestones')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (deleteError) throw deleteError;
+
     const newMilestones = milestones.filter(m => String(m.id) !== String(id));
     setMilestones(newMilestones);
     const goalIdStr = String(goalId);
-    const goalMs = newMilestones.filter(m => String(m.goal_id) === goalIdStr);
+    const goalMs = newMilestones.filter(m => String(m.goalId) === goalIdStr);
     const completed = goalMs.filter(m => m.completed).length;
-    await base44.entities.Goal.update(goalId, { milestones_completed: completed, milestones_total: goalMs.length });
-    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestones_completed: completed, milestones_total: goalMs.length } : g));
+
+    const { error: goalUpdateError } = await supabase
+      .from('goals')
+      .update({ milestones_completed: completed, milestones_total: goalMs.length })
+      .eq('id', goalId)
+      .eq('user_id', user.id);
+
+    if (goalUpdateError) throw goalUpdateError;
+
+    setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestonesCompleted: completed, milestonesTotal: goalMs.length } : g));
   };
 
   if (loading) {
@@ -205,11 +383,11 @@ export default function Goals() {
       ) : (
         <div className="space-y-3">
           {goals?.map(goal => {
-            const area = lifeAreas[goal.life_area] || lifeAreas.personal_growth;
-            const goalMs = milestones?.filter(m => String(m.goal_id) === String(goal.id)).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
+            const area = lifeAreas[goal.lifeArea] || lifeAreas.personal_growth;
+            const goalMs = milestones?.filter(m => String(m.goalId) === String(goal.id)).sort((a, b) => (a.order || 0) - (b.order || 0)) || [];
             console.log(`Goal ${goal.id} (${goal.title}):`, { goalId: goal.id, goalIdType: typeof goal.id, milestones: milestones, filteredMilestones: goalMs });
             const completed = goalMs.filter(m => m.completed).length || 0;
-            const total = goalMs.length || Number(goal.milestones_total) || 0;
+            const total = goalMs.length || Number(goal.milestonesTotal) || 0;
             const pct = total > 0 ? Math.min(100, Math.max(0, (completed / total) * 100)) : 0;
             const isExpanded = expandedGoal === goal.id;
             const isAchieved = goal.status === 'achieved';
@@ -225,7 +403,7 @@ export default function Goals() {
                       <h3 className={`font-semibold text-sm ${isAchieved ? 'line-through' : ''}`}>{goal.title}</h3>
                       <span className="text-[11px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: area.color + '20', color: area.color }}>{area.label}</span>
                     </div>
-                    {goal.target_date && <p className="text-xs text-muted-foreground mt-0.5">Target: {formatDate(goal.target_date)}</p>}
+                    {goal.targetDate && <p className="text-xs text-muted-foreground mt-0.5">Target: {formatDate(goal.targetDate)}</p>}
                     {goal.why && <p className="text-xs text-muted-foreground mt-1 italic">"{goal.why}"</p>}
                   </div>
                   <div className="flex items-center gap-1">
