@@ -10,13 +10,25 @@
   "icons": [
     {
       "src": "/favicon.svg.png",
-      "sizes": "any",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
       "src": "/logo.svg.png",
-      "sizes": "any",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
