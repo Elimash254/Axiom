@@ -28,8 +28,21 @@ export const AppProvider = ({ children }) => {
     setDataError(null);
     
     try {
+      // Fetch profile separately to prevent 404 from blocking other data
+      let profileData = null;
+      try {
+        const profileResult = await supabase.from('user_profiles').select('*').eq('user_id', user.id).single().maybeSingle();
+        if (profileResult.data) {
+          profileData = profileResult.data;
+          setProfile(profileData);
+        }
+      } catch (profileError) {
+        console.error('Error fetching profile (non-blocking):', profileError);
+        // Continue without profile - don't block other data
+      }
+
+      // Fetch other data in parallel
       const [
-        profileResult,
         booksResult,
         topicsResult,
         habitsResult,
@@ -37,8 +50,6 @@ export const AppProvider = ({ children }) => {
         holdingsResult,
         savingsResult
       ] = await Promise.all([
-        // Fetch profile (assuming profiles table exists)
-        supabase.from('profiles').select('*').eq('user_id', user.id).single(),
         // Fetch books
         supabase.from('books').select('*').eq('user_id', user.id),
         // Fetch topics
@@ -50,11 +61,6 @@ export const AppProvider = ({ children }) => {
         supabase.from('holdings').select('*').eq('user_id', user.id),
         supabase.from('savings_goals').select('*').eq('user_id', user.id)
       ]);
-
-      // Set profile data
-      if (profileResult.data) {
-        setProfile(profileResult.data);
-      }
 
       // Set books data
       if (booksResult.data) {
@@ -138,7 +144,7 @@ export const AppProvider = ({ children }) => {
     if (!user) return;
     
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).single();
+      const { data } = await supabase.from('user_profiles').select('*').eq('user_id', user.id).single().maybeSingle();
       setProfile(data);
     } catch (error) {
       console.error('Error refreshing profile data:', error);
