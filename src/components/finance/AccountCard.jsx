@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Wallet, Trash2, Plus, Minus, X } from 'lucide-react';
 import { formatCurrency, todayStr } from '@/lib/format';
 
 export default function AccountCard({ account, onDelete, onTxn }) {
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(null);
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -13,17 +15,20 @@ export default function AccountCard({ account, onDelete, onTxn }) {
     if (!amt) return;
     const isAdd = showForm === 'add';
     const txnType = isAdd ? 'income' : 'expense';
-    const txn = await base44.entities.Transaction.create({
+    const { data: txn, error: txnError } = await supabase.from('transactions').insert([{
       description: description || (isAdd ? 'Deposit' : 'Withdrawal'),
       amount: amt,
       type: txnType,
       category: isAdd ? 'income' : 'other',
       date: todayStr(),
       account_id: account.id,
-    });
+      user_id: user.id,
+    }]).select().single();
+    if (txnError) throw txnError;
     const currentBalance = Number(account.balance) || 0;
     const newBalance = currentBalance + (isAdd ? amt : -amt);
-    const updated = await base44.entities.Account.update(account.id, { balance: newBalance });
+    const { data: updated, error: updateError } = await supabase.from('accounts').update({ balance: newBalance }).eq('id', account.id).eq('user_id', user.id).select().single();
+    if (updateError) throw updateError;
     onTxn(txn, updated);
     setAmount('');
     setDescription('');

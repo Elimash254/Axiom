@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { PiggyBank, Trash2, Plus, Minus, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import ProgressBar from '@/components/ProgressBar';
 
 export default function SavingsCard({ goal, onDelete, onUpdate }) {
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(null);
   const [amount, setAmount] = useState('');
 
@@ -19,7 +21,8 @@ export default function SavingsCard({ goal, onDelete, onUpdate }) {
         ? currentAmount + amt
         : Math.max(0, currentAmount - amt);
       console.log('[SavingsCard] Updating goal:', goal.id, 'new amount:', newAmount);
-      const updated = await base44.entities.SavingsGoal.update(goal.id, { current_amount: newAmount });
+      const { data: updated, error } = await supabase.from('savings_goals').update({ current_amount: newAmount }).eq('id', goal.id).eq('user_id', user.id).select().single();
+      if (error) throw error;
       console.log('[SavingsCard] Updated successfully:', updated);
       onUpdate(updated);
       setAmount('');

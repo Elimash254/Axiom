@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
-import { Camera, Save, Flame, Target, BookOpen, Wallet } from 'lucide-react';
+import { Camera, Save, Flame, Target, BookOpen, Wallet, X, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '@/lib/cropImage';
 
 export default function Profile() {
   const { user, checkUserAuth, updateUser } = useAuth();
@@ -12,6 +14,11 @@ export default function Profile() {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [saving, setSaving] = useState(false);
   const [readingSpeed, setReadingSpeed] = useState('1.5');
   const [stats, setStats] = useState(null);
@@ -31,14 +38,14 @@ export default function Profile() {
     (async () => {
       try {
         const [habits, goals, courses, books, accounts, habitLogs] = await Promise.all([
-          base44.entities.Habit.list(),
-          base44.entities.Goal.list(),
-          base44.entities.Course.list(),
-          base44.entities.Book.list(),
-          base44.entities.Account.list(),
-          base44.entities.HabitLog.list(),
+          supabase.from('habits').select('*').eq('user_id', user.id),
+          supabase.from('goals').select('*').eq('user_id', user.id),
+          supabase.from('courses').select('*').eq('user_id', user.id),
+          supabase.from('books').select('*').eq('user_id', user.id),
+          supabase.from('accounts').select('*').eq('user_id', user.id),
+          supabase.from('habit_logs').select('*').eq('user_id', user.id),
         ]);
-        setStats({ habits, goals, courses, books, accounts, habitLogs });
+        setStats({ habits: habits.data || [], goals: goals.data || [], courses: courses.data || [], books: books.data || [], accounts: accounts.data || [], habitLogs: habitLogs.data || [] });
       } catch (err) {
         console.error(err);
       } finally {
@@ -47,26 +54,66 @@ export default function Profile() {
     })();
   }, []);
 
-  const handleAvatarChange = async (e) => {
+  const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = (croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleCropAndUpload = async () => {
+    if (!croppedAreaPixels || !imageToCrop) return;
     setUploadingAvatar(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.auth.updateMe({ avatar_url: file_url });
-      setAvatarUrl(file_url);
-      updateUser({ user_metadata: { ...user?.user_metadata, avatar_url: file_url } });
+      const croppedImageBlob = await getCroppedImg(imageToCrop, croppedAreaPixels);
+      const fileName = `avatar-${user.id}-${Date.now()}.jpg`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, croppedImageBlob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+      setAvatarUrl(publicUrl);
+      updateUser({ user_metadata: { ...user?.user_metadata, avatar_url: publicUrl } });
+      setShowCropper(false);
+      setImageToCrop(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
     } catch (err) {
-      console.error(err);
+      console.error('Error uploading avatar:', err);
     } finally {
       setUploadingAvatar(false);
     }
   };
 
+  const handleCancelCrop = () => {
+    setShowCropper(false);
+    setImageToCrop(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await base44.auth.updateMe({ display_name: displayName, bio, reading_speed: parseFloat(readingSpeed) || 1.5 });
+      await supabase.auth.updateUser({
+        data: { display_name: displayName, bio, reading_speed: parseFloat(readingSpeed) || 1.5 }
+      });
       updateUser({ user_metadata: { ...user?.user_metadata, display_name: displayName, bio, reading_speed: parseFloat(readingSpeed) || 1.5 } });
     } catch (err) {
       console.error(err);
@@ -119,6 +166,63 @@ export default function Profile() {
           {uploadingAvatar ? 'Uploading...' : 'Tap to change photo'}
         </p>
       </div>
+
+      {showCropper && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <div className="relative w-full h-80 bg-black rounded-lg overflow-hidden mb-4">
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={handleCropComplete}
+              />
+            </div>
+            <div className="flex items-center gap-4 mb-4">
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="flex-1"
+              />
+              <span className="text-xs text-white/60 w-12">{Math.round(zoom * 100)}%</span>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelCrop}
+                disabled={uploadingAvatar}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl glass font-semibold text-sm disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+              <button
+                onClick={handleCropAndUpload}
+                disabled={uploadingAvatar}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-50"
+              >
+                {uploadingAvatar ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/10 border-t-white rounded-full animate-spin"></div>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Save Photo
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass rounded-2xl p-5 mb-6 space-y-4">
         <div>
