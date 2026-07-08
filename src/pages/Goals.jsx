@@ -59,17 +59,12 @@ export default function Goals() {
         base44.entities.Goal.list(),
         base44.entities.Milestone.list(),
       ]);
-      console.log('[Goals] Goals fetched:', g);
-      console.log('[Goals] Milestones fetched:', m);
+      console.log('[Goals] Goals fetched:', g?.length || 0, 'items');
+      console.log('[Goals] Milestones fetched:', m?.length || 0, 'items');
+      console.log('[Goals] Goals data:', g);
+      console.log('[Goals] Milestones data:', m);
       setGoals(g || []);
-      setMilestones(prev => {
-        if (prev.length > 0 && (!m || m.length === 0)) {
-          console.log('[Goals] Defending against empty milestone overwrite, keeping previous state');
-          return prev;
-        }
-        console.log('[Goals] Updating milestones with fetched data:', m);
-        return m || [];
-      });
+      setMilestones(m || []);
     } catch (err) {
       console.error('[Goals] Error loading data:', err);
       toast.error('Failed to load goals data');
@@ -100,9 +95,11 @@ export default function Goals() {
       let createdMs = [];
       if (msTitles.length > 0) {
         const goalIdStr = String(created.id);
+        console.log('[Goals] Bulk creating milestones for goal:', goalIdStr, msTitles);
         createdMs = await base44.entities.Milestone.bulkCreate(
           msTitles.map((title, i) => ({ goal_id: goalIdStr, title, order: i, completed: false }))
         );
+        console.log('[Goals] Bulk milestones created successfully:', createdMs);
         await base44.entities.Goal.update(created.id, { milestones_total: msTitles.length, status: 'in_progress' });
       }
 
@@ -133,7 +130,9 @@ export default function Goals() {
     if (!title) return;
     const goalIdStr = String(goalId);
     const currentOrder = milestones.filter(m => String(m.goal_id) === goalIdStr).length;
+    console.log('[Goals] Creating milestone:', { goalId: goalIdStr, title, order: currentOrder });
     const created = await base44.entities.Milestone.create({ goal_id: goalIdStr, title, completed: false, order: currentOrder });
+    console.log('[Goals] Milestone created successfully:', created);
     setMilestones(prev => [...prev, created]);
 
     // Calculate new total after adding the milestone
