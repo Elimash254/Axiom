@@ -23,6 +23,30 @@ async function searchCoinGeckoId(symbol) {
  * Returns: { [SYMBOL]: { price: number, logo: string, sparkline: number[] } }
  */
 export async function fetchCryptoPrices(symbols) {
+  const CACHE_KEY = 'axiom_crypto_cache';
+  const CACHE_TIME_KEY = 'axiom_crypto_cache_time';
+  const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+  // Check cache first
+  const cachedData = localStorage.getItem(CACHE_KEY);
+  const cacheTime = localStorage.getItem(CACHE_TIME_KEY);
+  
+  if (cachedData && cacheTime) {
+    const cacheAge = Date.now() - parseInt(cacheTime);
+    if (cacheAge < CACHE_TTL) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        // Return cached data if it contains all requested symbols
+        const allSymbolsCached = symbols.every(s => parsed[s]);
+        if (allSymbolsCached) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse cached crypto data:', e);
+      }
+    }
+  }
+
   const knownIds = [];
   const symbolToId = {};
   const unknownSymbols = [];
@@ -55,9 +79,29 @@ export async function fetchCryptoPrices(symbols) {
             };
           }
         }
+      } else if (res.status === 429) {
+        console.warn('CoinGecko rate limited, falling back to cache');
+        // Fall back to cached data on rate limit
+        if (cachedData) {
+          try {
+            const parsed = JSON.parse(cachedData);
+            return parsed;
+          } catch (e) {
+            console.error('Failed to parse cached crypto data on rate limit:', e);
+          }
+        }
       }
     } catch (e) {
       console.error('CoinGecko batch fetch failed:', e);
+      // Fall back to cached data on error
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          return parsed;
+        } catch (e) {
+          console.error('Failed to parse cached crypto data on error:', e);
+        }
+      }
     }
   }
 
@@ -84,6 +128,26 @@ export async function fetchCryptoPrices(symbols) {
 
     for (const r of unknownResults) {
       if (r) result[r[0]] = r[1];
+    }
+  }
+
+  // Cache the results
+  if (Object.keys(result).length > 0) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(result));
+      localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+    } catch (e) {
+      console.error('Failed to cache crypto data:', e);
+    }
+  }
+
+  // If we got no results but have cached data, fall back to cache
+  if (Object.keys(result).length === 0 && cachedData) {
+    try {
+      const parsed = JSON.parse(cachedData);
+      return parsed;
+    } catch (e) {
+      console.error('Failed to parse cached crypto data as fallback:', e);
     }
   }
 
