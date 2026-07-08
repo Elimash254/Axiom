@@ -9,6 +9,7 @@ import { migrateToSupabase, checkMigrationStatus } from '@/lib/migrateToSupabase
 
 const ACCENTS = [
   { name: 'Copper', hsl: '21 48% 56%', preview: '#C47D57' },
+  { name: 'Emerald', hsl: '150 60% 45%', preview: '#10B981' },
   { name: 'Sage', hsl: '143 14% 56%', preview: '#7E9D8A' },
 ];
 

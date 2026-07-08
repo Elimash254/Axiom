@@ -13,7 +13,7 @@ import EmptyState from '@/components/EmptyState';
 import { formatDate, todayStr } from '@/lib/format';
 
 const eventCategories = {
-  academic: { color: '#C47D57', label: 'Academic' },
+  academic: { color: '#10B981', label: 'Academic' },
   personal: { color: '#7E9D8A', label: 'Personal' },
   work: { color: '#C47D57', label: 'Work' },
   health: { color: '#7E9D8A', label: 'Health' },

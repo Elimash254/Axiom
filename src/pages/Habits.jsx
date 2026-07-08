@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 const categories = {
   health: { color: '#7E9D8A', label: 'Health' },
-  mind: { color: '#C47D57', label: 'Mind' },
+  mind: { color: '#10B981', label: 'Mind' },
   discipline: { color: '#C47D57', label: 'Discipline' },
   social: { color: '#ec4899', label: 'Social' }
 };

@@ -76,7 +76,7 @@ export default function DeepWorkTimer({ courseId, courseTitle, onClose }) {
                 <circle cx="96" cy="96" r={radius} stroke="rgba(255,255,255,0.06)" strokeWidth="6" fill="none" />
                 <circle
                   cx="96" cy="96" r={radius}
-                  stroke="#C47D57" strokeWidth="6" fill="none"
+                  stroke="#10B981" strokeWidth="6" fill="none"
                   strokeDasharray={circumference}
                   strokeDashoffset={circumference * (1 - pct / 100)}
                   strokeLinecap="round"
@@ -84,7 +84,7 @@ export default function DeepWorkTimer({ courseId, courseTitle, onClose }) {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold tabular-nums" style={{ color: '#C47D57' }}>
+                <span className="text-4xl font-bold tabular-nums" style={{ color: '#10B981' }}>
                   {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
                 </span>
                 <button

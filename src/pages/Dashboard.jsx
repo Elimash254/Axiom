@@ -347,9 +347,9 @@ export default function Dashboard() {
 
       {/* Habits Ring - Hero Section */}
       <Link to="/habits" className="block mb-6">
-        <div className={`glass-strong rounded-3xl p-6 flex items-center gap-4 transition-all ${habitPct === 100 ? 'ring-2 ring-copper/50 bg-copper/5' : ''} relative overflow-hidden`}>
+        <div className={`glass-strong rounded-3xl p-6 flex items-center gap-4 transition-all ${habitPct === 100 ? 'ring-2 ring-emerald/50 bg-emerald/5' : ''} relative overflow-hidden`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-sage/5 rounded-full blur-3xl"></div>
-          <ProgressRing progress={habitPct} color={habitPct === 100 ? '#C47D57' : '#7E9D8A'} size={80}>
+          <ProgressRing progress={habitPct} color={habitPct === 100 ? '#10B981' : '#7E9D8A'} size={80}>
             <div className="text-center">
               <span className="text-xl font-bold">{completedToday}</span>
               <span className="text-xs text-muted-foreground">/{habits.length}</span>
@@ -357,7 +357,7 @@ export default function Dashboard() {
           </ProgressRing>
           <div className="flex-1 relative">
             <div className="flex items-center gap-2 mb-1">
-              <Flame className={`w-5 h-5 ${habitPct === 100 ? 'text-copper' : 'text-sage'}`} />
+              <Flame className={`w-5 h-5 ${habitPct === 100 ? 'text-emerald' : 'text-sage'}`} />
               <h3 className="text-lg font-semibold">Today's Habits</h3>
             </div>
             <p className="text-sm text-muted-foreground">

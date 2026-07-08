@@ -48,6 +48,10 @@ module.exports = {
   				DEFAULT: 'hsl(var(--sage))',
   				foreground: 'hsl(var(--sage-foreground))'
   			},
+  			emerald: {
+  				DEFAULT: 'hsl(var(--emerald))',
+  				foreground: 'hsl(var(--emerald-foreground))'
+  			},
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',

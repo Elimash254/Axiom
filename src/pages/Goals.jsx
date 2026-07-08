@@ -16,8 +16,8 @@ import { formatDate } from '@/lib/format';
 
 const lifeAreas = {
   financial: { color: '#C47D57', label: 'Financial', icon: '💰' },
-  personal_growth: { color: '#7E9D8A', label: 'Personal Growth', icon: '🌱' },
-  academic: { color: '#C47D57', label: 'Academic', icon: '🎓' },
+  personal_growth: { color: '#10B981', label: 'Personal Growth', icon: '🌱' },
+  academic: { color: '#10B981', label: 'Academic', icon: '🎓' },
   health: { color: '#7E9D8A', label: 'Health', icon: '💪' },
   career: { color: '#ec4899', label: 'Career', icon: '🚀' },
 };

@@ -49,7 +49,7 @@ export default function NotificationCenter() {
             type: 'habit', id: 'incomplete',
             title: `${incomplete.length} habit${incomplete.length > 1 ? 's' : ''} remaining`,
             subtitle: 'Tap to complete your daily habits',
-            icon: 'flame', link: '/habits', color: '#C47D57',
+            icon: 'flame', link: '/habits', color: '#10B981',
           });
         }
 
