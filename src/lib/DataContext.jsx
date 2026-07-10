@@ -69,6 +69,10 @@ export const DataProvider = ({ children }) => {
   }, [authUser?.id, loadAllData]); // Only reload when user ID changes or loadAllData changes
 
   const loadFinanceData = useCallback(async () => {
+    if (!authUser?.id) {
+      setFinanceLoading(false);
+      return;
+    }
     try {
       setFinanceLoading(true);
       const [a, t, h, sg] = await Promise.all([
@@ -103,6 +107,10 @@ export const DataProvider = ({ children }) => {
   }, [authUser?.id]);
 
   const loadHabitsData = useCallback(async () => {
+    if (!authUser?.id) {
+      setHabitsLoading(false);
+      return;
+    }
     try {
       setHabitsLoading(true);
       const [h, hl] = await Promise.all([
@@ -120,6 +128,10 @@ export const DataProvider = ({ children }) => {
   }, [authUser?.id]);
 
   const loadLearningData = useCallback(async () => {
+    if (!authUser?.id) {
+      setLearningLoading(false);
+      return;
+    }
     try {
       setLearningLoading(true);
       const [c, b] = await Promise.all([
@@ -185,7 +197,7 @@ export const DataProvider = ({ children }) => {
   const refreshGoals = () => loadGoalsData();
 
   const value = {
-    user,
+    user: authUser,
     loading,
     
     // Finance
