@@ -93,15 +93,20 @@ export default function Calendar() {
     }
   };
 
-  const toggleAlarm = async (alarm) => {
+const toggleAlarm = async (alarm) => {
+  try {
     await base44.entities.Alarm.update(alarm.id, { enabled: !alarm.enabled });
-    setAlarms(prev => prev.map(a => a.id === alarm.id ? { ...a, enabled: !alarm.enabled } : a }));
+    setAlarms(prev => prev.map(a => (a.id === alarm.id ? { ...a, enabled: !alarm.enabled } : a)));
+
     // Play sound when alarm is enabled
     if (!alarm.enabled) {
       soundService.init();
       soundService.playNotification('alarm');
     }
-  };
+  } catch (err) {
+    console.error('Error toggling alarm:', err);
+  }
+};
 
   const addReview = async () => {
     try {
