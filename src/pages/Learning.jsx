@@ -16,11 +16,17 @@ import FlashcardDeck from '@/components/learning/FlashcardDeck';
 import MixModeView from '@/components/learning/MixModeView';
 import DeepWorkTimer from '@/components/learning/DeepWorkTimer';
 import { useAuth } from '@/lib/AuthContext';
+import { useData } from '@/lib/DataContext';
 
 export default function Learning() {
-  const [courses, setCourses] = useState([]);
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    courses, 
+    books, 
+    learningLoading,
+    setCourses,
+    setBooks,
+    refreshLearning
+  } = useData();
   const [showAdd, setShowAdd] = useState(null);
   const [expandedUnit, setExpandedUnit] = useState(null);
   const [newCourse, setNewCourse] = useState({ title: '', platform: '', total_lessons: 0, target_date: '', notes: '' });
@@ -30,34 +36,6 @@ export default function Learning() {
   const [deepWorkCourse, setDeepWorkCourse] = useState(null);
   const { user } = useAuth();
   const readingSpeed = parseFloat(user?.reading_speed) || 1.5;
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      const [c, b] = await Promise.all([
-        supabase.from('courses').select('*').eq('user_id', user.id),
-        supabase.from('books').select('*').eq('user_id', user.id),
-      ]);
-      console.log('[Learning] Raw courses data:', c.data);
-      console.log('[Learning] Raw books data:', b.data);
-      // Sanitize courses data to prevent NaN errors
-      const sanitizedCourses = (c.data || []).map(course => ({
-        ...course,
-        total_lessons: Number(course.total_lessons) || 0,
-        lessons_completed: Number(course.lessons_completed) || 0,
-      }));
-      setCourses(sanitizedCourses);
-      // Sanitize books data to prevent NaN errors
-      const sanitizedBooks = (b.data || []).map(book => ({
-        ...book,
-        total_pages: Number(book.total_pages) || 0,
-        pages_read: Number(book.pages_read) || 0,
-      }));
-      setBooks(sanitizedBooks);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
 
   const addUnit = async () => {
     if (!newUnit.title.trim()) return;
@@ -196,7 +174,7 @@ export default function Learning() {
     return m > 0 ? `${h}h ${m}m to finish` : `${h}h to finish`;
   };
 
-  if (loading) {
+  if (learningLoading) {
     return (
       <div className="px-5 pt-12 pb-8">
         {/* Header Skeleton */}
@@ -307,7 +285,7 @@ export default function Learning() {
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
     >
-    <PullToRefresh onRefresh={loadData}>
+    <PullToRefresh onRefresh={refreshLearning}>
     <div className="px-5 pt-12 pb-8">
       <ModuleHeader
         title="Learning"

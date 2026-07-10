@@ -7,6 +7,7 @@ import PageNotFound from '@/lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { PrivacyModeProvider } from '@/lib/PrivacyModeContext';
 import { AppProvider } from '@/lib/AppContext';
+import { DataProvider } from '@/lib/DataContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from '@/components/ScorllToTop';
 import Layout from '@/components/Layout';
@@ -95,11 +96,13 @@ function App() {
       <PrivacyModeProvider>
         <QueryClientProvider client={queryClientInstance}>
           <AppProvider>
-            <Router>
-              <ScrollToTop />
-              <AuthenticatedApp />
-            </Router>
-            <Toaster />
+            <DataProvider>
+              <Router>
+                <ScrollToTop />
+                <AuthenticatedApp />
+              </Router>
+              <Toaster />
+            </DataProvider>
           </AppProvider>
         </QueryClientProvider>
       </PrivacyModeProvider>

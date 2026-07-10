@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Loader2, Eye, EyeOff } from 'lucide-react';
@@ -20,17 +20,25 @@ import LastSynced from '@/components/finance/LastSynced';
 import PullToRefresh from '@/components/PullToRefresh';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/AuthContext';
+import { useData } from '@/lib/DataContext';
 
 const txnCategories = ['income', 'rent', 'food', 'transport', 'investment', 'entertainment', 'health', 'education', 'shopping', 'other'];
 
 export default function Finance() {
   const { user } = useAuth();
   const { formatCurrency, hideBalances, togglePrivacyMode } = useFormatCurrency();
-  const [loading, setLoading] = useState(true);
-  const [accounts, setAccounts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [holdings, setHoldings] = useState([]);
-  const [savingsGoals, setSavingsGoals] = useState([]);
+  const { 
+    accounts, 
+    transactions, 
+    holdings, 
+    savingsGoals, 
+    financeLoading,
+    setAccounts,
+    setTransactions,
+    setHoldings,
+    setSavingsGoals,
+    refreshFinance
+  } = useData();
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd] = useState(null);
 
@@ -51,47 +59,69 @@ export default function Finance() {
   const [newTxn, setNewTxn] = useState({ description: '', amount: 0, type: 'expense', category: 'food', date: todayStr() });
   const [newSavings, setNewSavings] = useState({ title: '', target_amount: 0, current_amount: 0, target_date: '' });
 
-  useEffect(() => {loadData();fetchExchangeRate();}, []);
-
-  const loadData = async () => {
-    try {
-      const [a, t, h, sg] = await Promise.all([
-        supabase.from('accounts').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(100),
-        supabase.from('holdings').select('*').eq('user_id', user.id),
-        supabase.from('savings_goals').select('*').eq('user_id', user.id)
-      ]);
-      setAccounts(a.data || []);
-      setTransactions(t.data || []);
-      
-      console.log('[Finance] Raw savings goals data:', sg.data);
-      
-      // Sanitize holdings data to prevent NaN errors
-      const sanitizedHoldings = (h.data || []).map(holding => ({
-        ...holding,
-        quantity: Number(holding.quantity) || 0,
-        buy_price: Number(holding.buy_price) || 0,
-        current_price: Number(holding.current_price) || Number(holding.buy_price) || 0,
-      }));
-      console.log('[Finance] Loaded and sanitized holdings:', sanitizedHoldings.length);
-      setHoldings(sanitizedHoldings);
-      
-      // Sanitize savings goals data to prevent NaN errors
-      const sanitizedSavings = (sg.data || []).map(goal => ({
-        ...goal,
-        target_amount: Number(goal.target_amount) || 0,
-        current_amount: Number(goal.current_amount) || 0,
-      }));
-      setSavingsGoals(sanitizedSavings);
-      if (sanitizedHoldings.length > 0) refreshPrices(sanitizedHoldings);
-    } catch (err) {console.error(err);} finally
-    {setLoading(false);}
-  };
+  useEffect(() => { fetchExchangeRate(); }, []);
 
   const fetchExchangeRate = async () => {
     const rate = await fetchUsdKesRate();
     if (rate > 1) setExchangeRate(rate);
   };
+
+  // Memoize expensive calculations
+  const cashTotal = useMemo(() => {
+    return accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
+  }, [accounts]);
+
+  const portfolioValue = useMemo(() => {
+    return holdings.reduce((s, h) => {
+      const hc = h.currency || 'USD';
+      const quantity = Number(h.quantity) || 0;
+      const currentPrice = Number(h.current_price) || Number(h.buy_price) || 0;
+      const raw = quantity * currentPrice;
+      return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
+    }, 0);
+  }, [holdings, displayCurrency, exchangeRate]);
+
+  const portfolioCost = useMemo(() => {
+    return holdings.reduce((s, h) => {
+      const hc = h.currency || 'USD';
+      const quantity = Number(h.quantity) || 0;
+      const buyPrice = Number(h.buy_price) || 0;
+      const raw = quantity * buyPrice;
+      return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
+    }, 0);
+  }, [holdings, displayCurrency, exchangeRate]);
+
+  const portfolioChange = useMemo(() => {
+    return portfolioCost > 0 ? (portfolioValue - portfolioCost) / portfolioCost * 100 : 0;
+  }, [portfolioValue, portfolioCost]);
+
+  const savingsTotalRaw = useMemo(() => {
+    return savingsGoals.reduce((s, g) => s + (Number(g.current_amount) || 0), 0);
+  }, [savingsGoals]);
+
+  const savingsTotal = useMemo(() => {
+    return convertCurrency(savingsTotalRaw, 'KES', displayCurrency, exchangeRate);
+  }, [savingsTotalRaw, displayCurrency, exchangeRate]);
+
+  const netWorth = useMemo(() => {
+    return cashTotal + portfolioValue + savingsTotal;
+  }, [cashTotal, portfolioValue, savingsTotal]);
+
+  const monthTxns = useMemo(() => {
+    const now = new Date();
+    return transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+  }, [transactions]);
+
+  const monthIncome = useMemo(() => {
+    return monthTxns.filter((t) => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  }, [monthTxns]);
+
+  const monthExpense = useMemo(() => {
+    return monthTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  }, [monthTxns]);
 
   const handleAssetSelect = async (asset) => {
     setSelectedAsset(asset);
@@ -288,42 +318,13 @@ export default function Finance() {
     setter((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Currency-aware calculations — cash & savings are always KES, convert if showing USD
-  const cashTotalRaw = accounts.reduce((s, a) => s + (Number(a.balance) || 0), 0);
-  const cashTotal = convertCurrency(cashTotalRaw, 'KES', displayCurrency, exchangeRate);
-  const portfolioValue = holdings.reduce((s, h) => {
-    const hc = h.currency || 'USD';
-    const quantity = Number(h.quantity) || 0;
-    const currentPrice = Number(h.current_price) || Number(h.buy_price) || 0;
-    const raw = quantity * currentPrice;
-    return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
-  }, 0);
-  const portfolioCost = holdings.reduce((s, h) => {
-    const hc = h.currency || 'USD';
-    const quantity = Number(h.quantity) || 0;
-    const buyPrice = Number(h.buy_price) || 0;
-    const raw = quantity * buyPrice;
-    return s + convertCurrency(raw, hc, displayCurrency, exchangeRate);
-  }, 0);
-  // Protect against division by zero
-  const portfolioChange = portfolioCost > 0 ? (portfolioValue - portfolioCost) / portfolioCost * 100 : 0;
-  const savingsTotalRaw = savingsGoals.reduce((s, g) => s + (Number(g.current_amount) || 0), 0);
-  const savingsTotal = convertCurrency(savingsTotalRaw, 'KES', displayCurrency, exchangeRate);
-  const netWorth = cashTotal + portfolioValue + savingsTotal;
+  const lastPriceUpdate = useMemo(() => {
+    return holdings.filter((h) => h.last_updated).length > 0 ?
+      new Date(Math.max(...holdings.filter((h) => h.last_updated).map((h) => new Date(h.last_updated).getTime()))) :
+      null;
+  }, [holdings]);
 
-  const monthTxns = transactions.filter((t) => {
-    const d = new Date(t.date);
-    const now = new Date();
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const monthIncome = monthTxns.filter((t) => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const monthExpense = monthTxns.filter((t) => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-
-  const lastPriceUpdate = holdings.filter((h) => h.last_updated).length > 0 ?
-  new Date(Math.max(...holdings.filter((h) => h.last_updated).map((h) => new Date(h.last_updated).getTime()))) :
-  null;
-
-  if (loading) {
+  if (financeLoading) {
     return (
       <div className="px-5 pt-12 pb-8">
         {/* Header Skeleton */}
@@ -432,7 +433,7 @@ export default function Finance() {
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
     >
-    <PullToRefresh onRefresh={async () => { await loadData(); await fetchExchangeRate(); }}>
+    <PullToRefresh onRefresh={async () => { await refreshFinance(); await fetchExchangeRate(); }}>
     <div className="px-5 pt-12 pb-8">
       <ModuleHeader
         title="Finance"

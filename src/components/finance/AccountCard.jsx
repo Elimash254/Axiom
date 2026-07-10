@@ -5,8 +5,9 @@ import { useFormatCurrency } from '@/lib/useFormatCurrency';
 import { Wallet, Trash2, Plus, Minus, X } from 'lucide-react';
 import { todayStr } from '@/lib/format';
 import ProgressBar from '@/components/ProgressBar';
+import { memo } from 'react';
 
-export default function AccountCard({ account, onDelete, onTxn }) {
+const AccountCard = memo(function AccountCard({ account, onDelete, onTxn }) {
   const { user } = useAuth();
   const { formatCurrency } = useFormatCurrency();
   const [showForm, setShowForm] = useState(null);
@@ -97,4 +98,6 @@ export default function AccountCard({ account, onDelete, onTxn }) {
       )}
     </div>
   );
-}
+});
+
+export default AccountCard;

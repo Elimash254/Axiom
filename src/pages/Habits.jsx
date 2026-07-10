@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { todayStr, getStreakData } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
 import { soundService } from '@/lib/soundService';
+import { useData } from '@/lib/DataContext';
 
 const categories = {
   health: { color: '#7E9D8A', label: 'Health' },
@@ -21,42 +22,28 @@ const categories = {
 
 export default function Habits() {
   const { user } = useAuth();
-  const [habits, setHabits] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { 
+    habits, 
+    habitLogs, 
+    todayLogs, 
+    habitsLoading,
+    setHabits,
+    setHabitLogs,
+    setTodayLogs,
+    refreshHabits
+  } = useData();
   const [showAdd, setShowAdd] = useState(false);
   const [newHabit, setNewHabit] = useState({ name: '', category: 'discipline', frequency: 'daily', description: '' });
-  const [allLogs, setAllLogs] = useState([]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      const [h, hl] = await Promise.all([
-        supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
-        supabase.from('habit_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(500)
-      ]);
-      setHabits(h.data || []);
-      setAllLogs(hl.data || []);
-      setLogs((hl.data || []).filter((l) => l.date === todayStr()));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const toggleHabit = async (habit) => {
     const today = todayStr();
-    const existing = logs.find((l) => l?.habit_id === habit?.id && l?.date === today);
+    const existing = todayLogs.find((l) => l?.habit_id === habit?.id && l?.date === today);
 
     if (existing) {
       const { error } = await supabase.from('habit_logs').delete().eq('id', existing?.id).eq('user_id', user.id);
       if (error) throw error;
-      setLogs(logs.filter((l) => l?.id !== existing?.id));
-      setAllLogs(allLogs.filter((l) => l?.id !== existing?.id));
+      setTodayLogs(todayLogs.filter((l) => l?.id !== existing?.id));
+      setHabitLogs(habitLogs.filter((l) => l?.id !== existing?.id));
       // Decrement streak
       const currentStreak = Number(habit?.current_streak) || 0;
       const newStreak = Math.max(0, currentStreak - 1);
@@ -72,8 +59,8 @@ export default function Habits() {
         user_id: user.id,
       }]).select().single();
       if (error) throw error;
-      setLogs([...logs, created]);
-      setAllLogs([...allLogs, created]);
+      setTodayLogs([...todayLogs, created]);
+      setHabitLogs([...habitLogs, created]);
       // Increment streak
       const currentStreak = Number(habit?.current_streak) || 0;
       const longestStreak = Number(habit?.longest_streak) || 0;
@@ -121,7 +108,7 @@ export default function Habits() {
     setHabits(habits.filter((h) => h?.id !== id));
   };
 
-  if (loading) {
+  if (habitsLoading) {
     return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-white/10 border-t-white rounded-full animate-spin"></div></div>;
   }
 
@@ -132,7 +119,7 @@ export default function Habits() {
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
     >
-    <PullToRefresh onRefresh={loadData}>
+    <PullToRefresh onRefresh={refreshHabits}>
     <div className="px-5 pt-12 pb-8">
       <ModuleHeader
         title="Habits"
