@@ -2,11 +2,12 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import { supabase } from '@/lib/supabaseClient';
 import { base44 } from '@/api/base44Client';
 import { todayStr } from '@/lib/format';
+import { useAuth } from '@/lib/AuthContext';
 
 const DataContext = createContext(null);
 
 export const DataProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
   const [loading, setLoading] = useState(true);
   
   // Finance data
@@ -37,14 +38,6 @@ export const DataProvider = ({ children }) => {
   const [goals, setGoals] = useState([]);
   const [goalsLoading, setGoalsLoading] = useState(true);
 
-  useEffect(() => {
-    // Get user from localStorage or auth context
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
   const loadAllData = useCallback(async () => {
     try {
       await Promise.all([
@@ -59,22 +52,30 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]); // Only recreate when user ID changes
+  }, [authUser?.id]); // Only recreate when user ID changes
 
   useEffect(() => {
-    if (user && user.id) {
+    if (authUser && authUser.id) {
       loadAllData();
+    } else {
+      // Set loading to false if no user
+      setLoading(false);
+      setFinanceLoading(false);
+      setHabitsLoading(false);
+      setLearningLoading(false);
+      setCalendarLoading(false);
+      setGoalsLoading(false);
     }
-  }, [user?.id, loadAllData]); // Only reload when user ID changes or loadAllData changes
+  }, [authUser?.id, loadAllData]); // Only reload when user ID changes or loadAllData changes
 
   const loadFinanceData = useCallback(async () => {
     try {
       setFinanceLoading(true);
       const [a, t, h, sg] = await Promise.all([
-        supabase.from('accounts').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(100),
-        supabase.from('holdings').select('*').eq('user_id', user.id),
-        supabase.from('savings_goals').select('*').eq('user_id', user.id)
+        supabase.from('accounts').select('*').eq('user_id', authUser.id),
+        supabase.from('transactions').select('*').eq('user_id', authUser.id).order('date', { ascending: false }).limit(100),
+        supabase.from('holdings').select('*').eq('user_id', authUser.id),
+        supabase.from('savings_goals').select('*').eq('user_id', authUser.id)
       ]);
       
       setAccounts(a.data || []);
@@ -99,14 +100,14 @@ export const DataProvider = ({ children }) => {
     } finally {
       setFinanceLoading(false);
     }
-  }, [user?.id]);
+  }, [authUser?.id]);
 
   const loadHabitsData = useCallback(async () => {
     try {
       setHabitsLoading(true);
       const [h, hl] = await Promise.all([
-        supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
-        supabase.from('habit_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(500)
+        supabase.from('habits').select('*').eq('user_id', authUser.id).eq('active', true),
+        supabase.from('habit_logs').select('*').eq('user_id', authUser.id).order('date', { ascending: false }).limit(500)
       ]);
       setHabits(h.data || []);
       setHabitLogs(hl.data || []);
@@ -116,14 +117,14 @@ export const DataProvider = ({ children }) => {
     } finally {
       setHabitsLoading(false);
     }
-  }, [user?.id]);
+  }, [authUser?.id]);
 
   const loadLearningData = useCallback(async () => {
     try {
       setLearningLoading(true);
       const [c, b] = await Promise.all([
-        supabase.from('courses').select('*').eq('user_id', user.id),
-        supabase.from('books').select('*').eq('user_id', user.id),
+        supabase.from('courses').select('*').eq('user_id', authUser.id),
+        supabase.from('books').select('*').eq('user_id', authUser.id),
       ]);
       
       const sanitizedCourses = (c.data || []).map(course => ({
@@ -144,7 +145,7 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLearningLoading(false);
     }
-  }, [user?.id]);
+  }, [authUser?.id]);
 
   const loadCalendarData = useCallback(async () => {
     try {
