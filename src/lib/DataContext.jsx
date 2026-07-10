@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { base44 } from '@/api/base44Client';
 import { todayStr } from '@/lib/format';
@@ -45,13 +45,7 @@ export const DataProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      loadAllData();
-    }
-  }, [user]);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     try {
       await Promise.all([
         loadFinanceData(),
@@ -65,9 +59,15 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]); // Only recreate when user ID changes
 
-  const loadFinanceData = async () => {
+  useEffect(() => {
+    if (user && user.id) {
+      loadAllData();
+    }
+  }, [user?.id, loadAllData]); // Only reload when user ID changes or loadAllData changes
+
+  const loadFinanceData = useCallback(async () => {
     try {
       setFinanceLoading(true);
       const [a, t, h, sg] = await Promise.all([
@@ -99,9 +99,9 @@ export const DataProvider = ({ children }) => {
     } finally {
       setFinanceLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const loadHabitsData = async () => {
+  const loadHabitsData = useCallback(async () => {
     try {
       setHabitsLoading(true);
       const [h, hl] = await Promise.all([
@@ -116,9 +116,9 @@ export const DataProvider = ({ children }) => {
     } finally {
       setHabitsLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const loadLearningData = async () => {
+  const loadLearningData = useCallback(async () => {
     try {
       setLearningLoading(true);
       const [c, b] = await Promise.all([
@@ -144,9 +144,9 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLearningLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const loadCalendarData = async () => {
+  const loadCalendarData = useCallback(async () => {
     try {
       setCalendarLoading(true);
       const [e, a, r] = await Promise.all([
@@ -162,9 +162,9 @@ export const DataProvider = ({ children }) => {
     } finally {
       setCalendarLoading(false);
     }
-  };
+  }, []);
 
-  const loadGoalsData = async () => {
+  const loadGoalsData = useCallback(async () => {
     try {
       setGoalsLoading(true);
       const g = await base44.entities.Goal.list();
@@ -174,7 +174,7 @@ export const DataProvider = ({ children }) => {
     } finally {
       setGoalsLoading(false);
     }
-  };
+  }, []);
 
   // Refresh functions for individual data sections
   const refreshFinance = () => loadFinanceData();

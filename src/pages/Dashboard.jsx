@@ -75,10 +75,8 @@ export default function Dashboard() {
           setReview(reviews?.[0] || null);
         } catch {}
 
-        // Fetch live prices for holdings
-        if (ho.data && ho.data.length > 0) {
-          fetchLivePrices(ho.data);
-        }
+        // Remove automatic price fetch on initial load to prevent loops
+        // Prices will be updated by the 60-second interval
         // Fetch exchange rate
         const rate = await fetchUsdKesRate();
         if (rate > 1) setExchangeRate(rate);
@@ -106,7 +104,8 @@ export default function Dashboard() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'holdings', filter: `user_id=eq.${user.id}` }, () => {
           supabase.from('holdings').select('*').eq('user_id', user.id).then(({ data }) => {
             setHoldings(data || []);
-            if (data && data.length > 0) fetchLivePrices(data);
+            // Remove automatic price fetch on subscription update to prevent loops
+            // Prices will be updated by the 60-second interval or manual refresh
           });
         })
         .subscribe(),
@@ -142,19 +141,20 @@ export default function Dashboard() {
           h.current_price = price;
           h.last_updated = new Date().toISOString();
           if (logo) h.logo_url = logo;
-          try {await supabase.from('holdings').update({ current_price: h.current_price, last_updated: h.last_updated, logo_url: h.logo_url }).eq('id', h.id).eq('user_id', user.id);} catch {}
+          // Remove automatic PATCH to prevent infinite loop
+          // Prices are updated locally only; manual refresh or Finance page handles DB updates
         }
       } catch {}
     }
     setHoldings([...updated]);
   };
 
-  // Auto-refresh prices every 60 seconds
+  // Auto-refresh prices every 60 seconds - use empty deps to prevent re-creation
   useEffect(() => {
     if (holdings.length === 0) return;
     const interval = setInterval(() => fetchLivePrices(holdings), 60000);
     return () => clearInterval(interval);
-  }, [holdings.length]);
+  }, []);
 
   // Calculate values
   const today = new Date().toISOString().split('T')[0];
