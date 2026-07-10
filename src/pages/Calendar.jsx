@@ -56,15 +56,17 @@ export default function Calendar() {
     if (!newEvent.title.trim()) return;
     const cat = eventCategories[newEvent.category];
     const tempId = 'temp-' + Date.now();
-    const tempEvent = { ...newEvent, id: tempId, color: cat.color };
+    const eventData = { ...newEvent, color: cat.color };
+    const tempEvent = { ...eventData, id: tempId };
+    const isReminder = newEvent.category === 'reminder';
     setEvents(prev => [tempEvent, ...prev]);
     setNewEvent({ title: '', description: '', date: todayStr(), time: '', end_time: '', category: 'personal' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.CalendarEvent.create({ ...newEvent, color: cat.color });
+      const created = await base44.entities.CalendarEvent.create(eventData);
       setEvents(prev => prev.map(e => e.id === tempId ? created : e));
       // Play sound for reminder events
-      if (newEvent.category === 'reminder') {
+      if (isReminder) {
         soundService.init();
         soundService.playNotification('reminder');
       }
@@ -77,12 +79,13 @@ export default function Calendar() {
   const addAlarm = async () => {
     if (!newAlarm.title.trim()) return;
     const tempId = 'temp-' + Date.now();
-    const tempAlarm = { ...newAlarm, id: tempId, color: '#f43f5e', enabled: true };
+    const alarmData = { ...newAlarm, color: '#f43f5e' };
+    const tempAlarm = { ...alarmData, id: tempId, enabled: true };
     setAlarms(prev => [tempAlarm, ...prev]);
     setNewAlarm({ title: '', time: '07:00', days: 'everyday' });
     setShowAdd(null);
     try {
-      const created = await base44.entities.Alarm.create({ ...newAlarm, color: '#f43f5e' });
+      const created = await base44.entities.Alarm.create(alarmData);
       setAlarms(prev => prev.map(a => a.id === tempId ? created : a));
     } catch (err) {
       toast.error('Something went wrong, please try again');
@@ -104,22 +107,24 @@ export default function Calendar() {
     try {
       if (editingReviewId) {
         // Update existing review
-        const updated = await base44.entities.WeeklyReview.update(editingReviewId, {
+        const reviewData = {
           ...newReview,
           habit_hit_rate: Number(newReview.habit_hit_rate),
           milestones_completed: Number(newReview.milestones_completed),
           finance_delta: Number(newReview.finance_delta),
-        });
+        };
+        const updated = await base44.entities.WeeklyReview.update(editingReviewId, reviewData);
         setReviews(prev => prev.map(r => r.id === editingReviewId ? updated : r));
         toast.success('Weekly review updated!');
       } else {
         // Create new review
-        const created = await base44.entities.WeeklyReview.create({
+        const reviewData = {
           ...newReview,
           habit_hit_rate: Number(newReview.habit_hit_rate),
           milestones_completed: Number(newReview.milestones_completed),
           finance_delta: Number(newReview.finance_delta),
-        });
+        };
+        const created = await base44.entities.WeeklyReview.create(reviewData);
         setReviews(prev => [created, ...prev]);
         toast.success('Weekly review saved!');
       }

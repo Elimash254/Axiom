@@ -5,12 +5,17 @@ class SoundService {
     this.sounds = {};
     this.enabled = true;
     this.volume = 0.5;
+    this.isBrowser = typeof window !== 'undefined' && typeof window.AudioContext !== 'undefined';
   }
 
   // Initialize AudioContext (must be called after user interaction)
   init() {
+    if (!this.isBrowser) return;
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        this.audioContext = new AudioContextClass();
+      }
     }
   }
 
@@ -26,41 +31,45 @@ class SoundService {
 
   // Play a notification sound using Web Audio API
   playNotification(type = 'default') {
-    if (!this.enabled) return;
+    if (!this.enabled || !this.isBrowser) return;
     
     this.init();
     
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+    if (!this.audioContext || this.audioContext.state === 'suspended') {
+      return;
     }
 
-    const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
+    try {
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
 
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
 
-    // Different sound patterns based on type
-    switch (type) {
-      case 'alarm':
-        // Urgent alarm sound - rapid beeps
-        this.playAlarmPattern(oscillator, gainNode);
-        break;
-      case 'reminder':
-        // Gentle reminder sound - soft chime
-        this.playReminderPattern(oscillator, gainNode);
-        break;
-      case 'success':
-        // Success sound - pleasant ascending tone
-        this.playSuccessPattern(oscillator, gainNode);
-        break;
-      case 'error':
-        // Error sound - descending tone
-        this.playErrorPattern(oscillator, gainNode);
-        break;
-      default:
-        // Default notification - simple beep
-        this.playDefaultPattern(oscillator, gainNode);
+      // Different sound patterns based on type
+      switch (type) {
+        case 'alarm':
+          // Urgent alarm sound - rapid beeps
+          this.playAlarmPattern(oscillator, gainNode);
+          break;
+        case 'reminder':
+          // Gentle reminder sound - soft chime
+          this.playReminderPattern(oscillator, gainNode);
+          break;
+        case 'success':
+          // Success sound - pleasant ascending tone
+          this.playSuccessPattern(oscillator, gainNode);
+          break;
+        case 'error':
+          // Error sound - descending tone
+          this.playErrorPattern(oscillator, gainNode);
+          break;
+        default:
+          // Default notification - simple beep
+          this.playDefaultPattern(oscillator, gainNode);
+      }
+    } catch (err) {
+      console.error('Error playing sound:', err);
     }
   }
 
