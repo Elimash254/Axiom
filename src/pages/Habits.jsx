@@ -109,7 +109,34 @@ export default function Habits() {
   };
 
   if (habitsLoading) {
-    return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-white/10 border-t-white rounded-full animate-spin"></div></div>;
+    return (
+      <div className="px-5 pt-12 pb-8">
+        {/* Header Skeleton */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex-1">
+            <div className="h-4 w-32 animate-pulse bg-neutral-800/60 rounded mb-2"></div>
+            <div className="h-8 w-48 animate-pulse bg-neutral-800/60 rounded"></div>
+          </div>
+          <div className="h-9 w-16 animate-pulse bg-neutral-800/60 rounded"></div>
+        </div>
+
+        {/* Habits List Skeleton */}
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass rounded-2xl p-4 animate-pulse bg-neutral-800/60">
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-neutral-700/50"></div>
+                <div className="flex-1">
+                  <div className="h-4 w-32 bg-neutral-700/50 rounded mb-2"></div>
+                  <div className="h-3 w-24 bg-neutral-700/50 rounded"></div>
+                </div>
+                <div className="h-4 w-4 bg-neutral-700/50 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -174,8 +201,8 @@ export default function Habits() {
 
       <div className="space-y-3">
           {habits.map((habit) => {
-          const isDone = logs.some((l) => l?.habit_id === habit?.id && l?.status === 'completed');
-          const { streak, last7 } = getStreakData(allLogs, habit?.id);
+          const isDone = todayLogs.some((l) => l?.habit_id === habit?.id && l?.status === 'completed');
+          const { streak, last7 } = getStreakData(habitLogs, habit?.id);
           const cat = categories[habit?.category] || categories.discipline;
 
           return (

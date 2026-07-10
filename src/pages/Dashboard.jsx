@@ -11,23 +11,31 @@ import { formatPercent, todayStr, getGreeting, convertCurrency } from '@/lib/for
 import { useAuth } from '@/lib/AuthContext';
 import CurrencyToggle from '@/components/finance/CurrencyToggle';
 import { fetchUsdKesRate, fetchCryptoPrices, fetchAssetPrice } from '@/lib/priceService';
+import { useData } from '@/lib/DataContext';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { formatCurrency, hideBalances, togglePrivacyMode } = useFormatCurrency();
+  const { 
+    habits, 
+    habitLogs, 
+    goals,
+    courses, 
+    books, 
+    accounts, 
+    transactions, 
+    holdings, 
+    events, 
+    savingsGoals,
+    reviews,
+    refreshFinance,
+    refreshHabits,
+    refreshLearning,
+    refreshCalendar
+  } = useData();
   const [loading, setLoading] = useState(true);
-  const [habits, setHabits] = useState([]);
-  const [habitLogs, setHabitLogs] = useState([]);
-  const [goals, setGoals] = useState([]);
   const [milestones, setMilestones] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [books, setBooks] = useState([]);
   const [topics, setTopics] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [holdings, setHoldings] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [savingsGoals, setSavingsGoals] = useState([]);
   const [review, setReview] = useState(null);
   const [displayCurrency, setDisplayCurrency] = useState('KES');
   const [exchangeRate, setExchangeRate] = useState(() => parseFloat(localStorage.getItem('usd_kes_rate')) || 130);
@@ -40,121 +48,46 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
+        setLoading(false);
         const today = todayStr();
-        const [h, hl, g, m, c, b, a, t, ho, e, sg, tp] = await Promise.all([
-          supabase.from('habits').select('*').eq('user_id', user.id).eq('active', true),
-          supabase.from('habit_logs').select('*').eq('user_id', user.id).eq('date', today),
-          supabase.from('goals').select('*').eq('user_id', user.id).eq('status', 'in_progress'),
+        // Only load data not in DataContext
+        const [m, tp] = await Promise.all([
           supabase.from('milestones').select('*').eq('user_id', user.id),
-          supabase.from('courses').select('*').eq('user_id', user.id).eq('status', 'active'),
-          supabase.from('books').select('*').eq('user_id', user.id).eq('status', 'reading'),
-          supabase.from('accounts').select('*').eq('user_id', user.id),
-          supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(50),
-          supabase.from('holdings').select('*').eq('user_id', user.id),
-          supabase.from('calendar_events').select('*').eq('user_id', user.id).eq('date', today),
-          supabase.from('savings_goals').select('*').eq('user_id', user.id).eq('status', 'active'),
           supabase.from('topics').select('*').eq('user_id', user.id)
         ]);
-
-        setHabits(h.data || []);
-        setHabitLogs(hl.data || []);
-        setGoals(g.data || []);
         setMilestones(m.data || []);
-        setCourses(c.data || []);
-        setBooks(b.data || []);
-        setAccounts(a.data || []);
-        setTransactions(t.data || []);
-        setHoldings(ho.data || []);
-        setEvents(e.data || []);
-        setSavingsGoals(sg.data || []);
         setTopics(tp.data || []);
+        
+        // Set review from DataContext if available
+        if (reviews && reviews.length > 0) {
+          setReview(reviews[0]);
+        }
 
-        // Fetch latest reviews
-        try {
-          const { data: reviews } = await supabase.from('weekly_reviews').select('*').eq('user_id', user.id).order('week_starting', { ascending: false }).limit(1);
-          setReview(reviews?.[0] || null);
-        } catch {}
-
-        // Remove automatic price fetch on initial load to prevent loops
-        // Prices will be updated by the 60-second interval
         // Fetch exchange rate
         const rate = await fetchUsdKesRate();
         if (rate > 1) setExchangeRate(rate);
       } catch (err) {
         console.error(err);
-      } finally {
         setLoading(false);
       }
     })();
 
-    // Set up Supabase real-time subscriptions for financial data
-    const channels = [
-      supabase.channel('accounts-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts', filter: `user_id=eq.${user.id}` }, () => {
-          supabase.from('accounts').select('*').eq('user_id', user.id).then(({ data }) => setAccounts(data || []));
-        })
-        .subscribe(),
-      supabase.channel('transactions-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, () => {
-          const today = todayStr();
-          supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }).limit(50).then(({ data }) => setTransactions(data || []));
-        })
-        .subscribe(),
-      supabase.channel('holdings-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'holdings', filter: `user_id=eq.${user.id}` }, () => {
-          supabase.from('holdings').select('*').eq('user_id', user.id).then(({ data }) => {
-            setHoldings(data || []);
-            // Remove automatic price fetch on subscription update to prevent loops
-            // Prices will be updated by the 60-second interval or manual refresh
-          });
-        })
-        .subscribe(),
-      supabase.channel('savings_goals-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'savings_goals', filter: `user_id=eq.${user.id}` }, () => {
-          supabase.from('savings_goals').select('*').eq('user_id', user.id).then(({ data }) => setSavingsGoals(data || []));
-        })
-        .subscribe(),
-    ];
-
-    return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
-    };
-  }, [user.id]);
-
-  const fetchLivePrices = async (holdingsData) => {
-    const cryptoSyms = holdingsData.filter((h) => h.asset_type === 'crypto').map((h) => h.symbol);
-    const cryptoData = cryptoSyms.length > 0 ? await fetchCryptoPrices(cryptoSyms) : {};
-
-    const updated = [...holdingsData];
-    for (let h of updated) {
+    // Load milestones and topics only
+    const loadDashboardSpecific = async () => {
       try {
-        let price, logo;
-        if (h.asset_type === 'crypto' && cryptoData[h.symbol]) {
-          price = cryptoData[h.symbol].price;
-          logo = cryptoData[h.symbol].logo;
-        } else {
-          const result = await fetchAssetPrice(h);
-          price = result.price;
-          logo = result.logo;
-        }
-        if (price) {
-          h.current_price = price;
-          h.last_updated = new Date().toISOString();
-          if (logo) h.logo_url = logo;
-          // Remove automatic PATCH to prevent infinite loop
-          // Prices are updated locally only; manual refresh or Finance page handles DB updates
-        }
-      } catch {}
-    }
-    setHoldings([...updated]);
-  };
+        const [m, tp] = await Promise.all([
+          supabase.from('milestones').select('*').eq('user_id', user.id),
+          supabase.from('topics').select('*').eq('user_id', user.id)
+        ]);
+        setMilestones(m.data || []);
+        setTopics(tp.data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-  // Auto-refresh prices every 60 seconds - use empty deps to prevent re-creation
-  useEffect(() => {
-    if (holdings.length === 0) return;
-    const interval = setInterval(() => fetchLivePrices(holdings), 60000);
-    return () => clearInterval(interval);
-  }, []);
+    loadDashboardSpecific();
+  }, [user.id]);
 
   // Calculate values
   const today = new Date().toISOString().split('T')[0];
