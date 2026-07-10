@@ -13,6 +13,7 @@ import ModuleHeader from '@/components/ModuleHeader';
 import EmptyState from '@/components/EmptyState';
 import ProgressBar from '@/components/ProgressBar';
 import { formatDate } from '@/lib/format';
+import { soundService } from '@/lib/soundService';
 
 const lifeAreas = {
   financial: { color: '#C47D57', label: 'Financial', icon: '💰' },
@@ -238,6 +239,12 @@ export default function Goals() {
     if (goalUpdateError) throw goalUpdateError;
 
     setGoals(prev => prev.map(g => String(g.id) === goalIdStr ? { ...g, milestonesCompleted: completed, milestonesTotal: total, status: newStatus } : g));
+    
+    // Play success sound when milestone is completed
+    if (!ms.completed) {
+      soundService.init();
+      soundService.playNotification('success');
+    }
   };
 
   const addMilestone = async (goalId) => {

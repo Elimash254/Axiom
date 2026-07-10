@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ModuleHeader from '@/components/ModuleHeader';
 import EmptyState from '@/components/EmptyState';
 import { formatDate, todayStr } from '@/lib/format';
+import { soundService } from '@/lib/soundService';
 
 const eventCategories = {
   academic: { color: '#10B981', label: 'Academic' },
@@ -62,6 +63,11 @@ export default function Calendar() {
     try {
       const created = await base44.entities.CalendarEvent.create({ ...newEvent, color: cat.color });
       setEvents(prev => prev.map(e => e.id === tempId ? created : e));
+      // Play sound for reminder events
+      if (newEvent.category === 'reminder') {
+        soundService.init();
+        soundService.playNotification('reminder');
+      }
     } catch (err) {
       toast.error('Something went wrong, please try again');
       setEvents(prev => prev.filter(e => e.id !== tempId));
@@ -86,7 +92,12 @@ export default function Calendar() {
 
   const toggleAlarm = async (alarm) => {
     await base44.entities.Alarm.update(alarm.id, { enabled: !alarm.enabled });
-    setAlarms(prev => prev.map(a => a.id === alarm.id ? { ...a, enabled: !alarm.enabled } : a));
+    setAlarms(prev => prev.map(a => a.id === alarm.id ? { ...a, enabled: !alarm.enabled } : a }));
+    // Play sound when alarm is enabled
+    if (!alarm.enabled) {
+      soundService.init();
+      soundService.playNotification('alarm');
+    }
   };
 
   const addReview = async () => {

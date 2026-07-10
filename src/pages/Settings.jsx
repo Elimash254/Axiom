@@ -4,8 +4,9 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { Check, Download, Palette, Bell, Sun, Moon, Trash2, UserX, Database, RefreshCw } from 'lucide-react';
+import { Check, Download, Palette, Bell, Sun, Moon, Trash2, UserX, Database, RefreshCw, Volume2 } from 'lucide-react';
 import { migrateToSupabase, checkMigrationStatus } from '@/lib/migrateToSupabase';
+import { soundService } from '@/lib/soundService';
 
 const ACCENTS = [
   { name: 'Copper', hsl: '21 48% 56%', preview: '#C47D57' },
@@ -17,6 +18,8 @@ export default function Settings() {
   const { logout } = useAuth();
   const [accent, setAccent] = useState('21 48% 56%');
   const [alarmsEnabled, setAlarmsEnabled] = useState(true);
+  const [soundsEnabled, setSoundsEnabled] = useState(true);
+  const [soundVolume, setSoundVolume] = useState(0.5);
   const [exporting, setExporting] = useState(false);
   const [exported, setExported] = useState(false);
   const [theme, setTheme] = useState('dark');
@@ -28,10 +31,18 @@ export default function Settings() {
   useEffect(() => {
     const savedAccent = localStorage.getItem('app_accent') || '21 48% 56%';
     const savedAlarms = localStorage.getItem('alarms_enabled') !== 'false';
+    const savedSounds = localStorage.getItem('sounds_enabled') !== 'false';
+    const savedVolume = parseFloat(localStorage.getItem('sound_volume')) || 0.5;
     const savedTheme = localStorage.getItem('app_theme') || 'dark';
     setAccent(savedAccent);
     setAlarmsEnabled(savedAlarms);
+    setSoundsEnabled(savedSounds);
+    setSoundVolume(savedVolume);
     setTheme(savedTheme);
+    
+    // Initialize sound service with saved settings
+    soundService.setEnabled(savedSounds);
+    soundService.setVolume(savedVolume);
 
     // Check migration status
     checkMigrationStatus().then(result => {
@@ -63,6 +74,23 @@ export default function Settings() {
   const toggleAlarms = (enabled) => {
     setAlarmsEnabled(enabled);
     localStorage.setItem('alarms_enabled', enabled.toString());
+  };
+
+  const toggleSounds = (enabled) => {
+    setSoundsEnabled(enabled);
+    localStorage.setItem('sounds_enabled', enabled.toString());
+    soundService.setEnabled(enabled);
+  };
+
+  const handleVolumeChange = (volume) => {
+    setSoundVolume(volume);
+    localStorage.setItem('sound_volume', volume.toString());
+    soundService.setVolume(volume);
+  };
+
+  const testSound = () => {
+    soundService.init();
+    soundService.playNotification('reminder');
   };
 
   const handleClearAllData = async () => {
@@ -251,6 +279,47 @@ export default function Settings() {
             </div>
           </div>
           <Switch checked={alarmsEnabled} onCheckedChange={toggleAlarms} />
+        </div>
+      </div>
+
+      <div className="glass rounded-2xl p-5 mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Volume2 className="w-4 h-4 text-muted-foreground" />
+          <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-muted-foreground">
+            Sound Effects
+          </h2>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium">Enable Sounds</h3>
+              <p className="text-[10px] text-muted-foreground">Play sounds for alarms, reminders, and achievements</p>
+            </div>
+            <Switch checked={soundsEnabled} onCheckedChange={toggleSounds} />
+          </div>
+          {soundsEnabled && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs text-muted-foreground">Volume</label>
+                <span className="text-xs text-muted-foreground">{Math.round(soundVolume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={soundVolume}
+                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+              />
+              <button
+                onClick={testSound}
+                className="mt-3 w-full py-2 rounded-lg glass text-xs font-medium hover:bg-white/5 transition-colors"
+              >
+                Test Sound
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

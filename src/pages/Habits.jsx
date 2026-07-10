@@ -10,6 +10,7 @@ import PullToRefresh from '@/components/PullToRefresh';
 import toast from 'react-hot-toast';
 import { todayStr, getStreakData } from '@/lib/format';
 import { useAuth } from '@/lib/AuthContext';
+import { soundService } from '@/lib/soundService';
 
 const categories = {
   health: { color: '#7E9D8A', label: 'Health' },
@@ -85,6 +86,9 @@ export default function Habits() {
       }).eq('id', habit?.id).eq('user_id', user.id);
       if (updateError) throw updateError;
       setHabits(habits.map((h) => h?.id === habit?.id ? { ...h, current_streak: newStreak, longest_streak: newLongest, last_completed_date: today } : h));
+      // Play success sound on habit completion
+      soundService.init();
+      soundService.playNotification('success');
     }
   };
 
